@@ -2580,7 +2580,7 @@
       "pausedRequired": "paused(불리언)는 필수입니다",
       "updateConversationFailed": "대화를 업데이트하지 못했습니다",
       "loadConfigFailed": "AI 설정을 불러오지 못했습니다",
-      "providerInvalid": "제공자는 \"openai\", \"anthropic\" 또는 \"openai_compatible\"이어야 합니다",
+      "providerInvalid": "제공자는 \"openai\", \"anthropic\", \"gemini\" 또는 \"openai_compatible\"이어야 합니다",
       "baseUrlRequired": "openai_compatible에는 base_url이 필수입니다",
       "baseUrlInvalid": "base_url은 올바른 http(s) URL이어야 합니다",
       "modelRequired": "모델은 필수입니다",

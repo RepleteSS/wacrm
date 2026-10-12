@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { generateReply, parseGeneration } from './generate'
 import { AiError, type AiConfig } from './types'
+import { HANDOFF_SENTINEL } from './defaults'
 
 function config(overrides: Partial<AiConfig> = {}): AiConfig {
   return {
@@ -194,6 +195,46 @@ describe('generateReply — Anthropic', () => {
   })
 })
 
+describe('generateReply — Gemini', () => {
+  it('calls the Gemini endpoint and strips handoff sentinels', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okResponse({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: `I am unable to resolve this. ${HANDOFF_SENTINEL}` }],
+              role: 'model',
+            },
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 18,
+          candidatesTokenCount: 9,
+          totalTokenCount: 27,
+        },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const res = await generateReply({
+      config: config({ provider: 'gemini', model: 'gemini-3.8-flash', apiKey: 'AIzaSy123' }),
+      systemPrompt: 'sys',
+      messages: [{ role: 'user', content: 'Help me' }],
+    })
+
+    expect(res.handoff).toBe(true)
+    expect(res.text).toBe('I am unable to resolve this.')
+    expect(res.usage).toEqual({
+      promptTokens: 18,
+      completionTokens: 9,
+      totalTokens: 27,
+    })
+
+    const [url, opts] = fetchMock.mock.calls[0]
+    expect(url).toContain('generativelanguage.googleapis.com')
+    expect(opts.headers['x-goog-api-key']).toBe('AIzaSy123')
+  })
+})
 
 describe('generateReply — OpenAI-compatible', () => {
   it('uses the configured endpoint and max_tokens', async () => {

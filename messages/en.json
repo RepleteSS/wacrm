@@ -2580,7 +2580,7 @@
       "pausedRequired": "paused (boolean) is required",
       "updateConversationFailed": "Failed to update conversation",
       "loadConfigFailed": "Failed to load AI configuration",
-      "providerInvalid": "provider must be \"openai\", \"anthropic\", or \"openai_compatible\"",
+      "providerInvalid": "provider must be \"openai\", \"anthropic\", \"gemini\", or \"openai_compatible\"",
       "baseUrlRequired": "base_url is required for openai_compatible",
       "baseUrlInvalid": "base_url must be a valid http(s) URL",
       "modelRequired": "model is required",
