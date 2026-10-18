@@ -202,6 +202,27 @@ export async function POST(request: Request) {
       }
     }
 
+    // Automatically configure Meta App webhook subscription for messages if not already done
+    try {
+      const appToken = `${appId}|${appSecret}`
+      const subUrl = `${META_API_BASE}/${appId}/subscriptions`
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wacrm.repleteequities.com'
+      const webhookCallback = `${siteUrl.replace(/\/$/, '')}/api/whatsapp/webhook`
+      const body = new URLSearchParams({
+        object: 'whatsapp_business_account',
+        callback_url: webhookCallback,
+        verify_token: 'replete_wacrm_verify_token',
+        fields: 'messages',
+      })
+      await fetch(subUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${appToken}` },
+        body,
+      })
+    } catch (e) {
+      console.warn('[embedded-signup] auto app subscription warning:', e)
+    }
+
     // Encrypt token
     const encryptedAccessToken = encrypt(accessToken)
 
@@ -212,10 +233,9 @@ export async function POST(request: Request) {
       .eq('account_id', accountId)
       .maybeSingle()
 
-    const encryptedVerifyToken = resolveVerifyTokenForSave(
-      null,
-      existing?.verify_token ?? null
-    )
+    const encryptedVerifyToken = existing?.verify_token
+      ? existing.verify_token
+      : encrypt('replete_wacrm_verify_token')
 
     const baseRow = {
       phone_number_id: resolvedPhoneNumberId,
