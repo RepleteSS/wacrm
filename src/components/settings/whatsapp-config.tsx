@@ -357,65 +357,71 @@ export function WhatsAppConfig() {
     }
 
     try {
-      FB.login(async (response: any) => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(safetyTimeout);
+      // Meta Facebook JS SDK strictly forbids async functions as callbacks; use a synchronous function that spawns an async task
+      FB.login((response: any) => {
+        (async () => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(safetyTimeout);
 
-        console.log('[Meta FB.login response]', response);
+          console.log('[Meta FB.login response]', response);
 
-        if (response.authResponse?.code) {
-          const code = response.authResponse.code;
-          toast.info('Meta authorization granted. Finalizing connection...');
+          if (response.authResponse?.code) {
+            const code = response.authResponse.code;
+            toast.info('Meta authorization granted. Finalizing connection...');
 
-          // Wait a short moment for WA_EMBEDDED_SIGNUP finish event if pending
-          const sessionInfo = await Promise.race([
-            sessionInfoPromise,
-            new Promise<{ waba_id?: string; phone_number_id?: string }>((res) =>
-              setTimeout(() => res({}), 2000)
-            ),
-          ]);
+            // Wait a short moment for WA_EMBEDDED_SIGNUP finish event if pending
+            const sessionInfo = await Promise.race([
+              sessionInfoPromise,
+              new Promise<{ waba_id?: string; phone_number_id?: string }>((res) =>
+                setTimeout(() => res({}), 2000)
+              ),
+            ]);
 
-          try {
-            const res = await fetch('/api/whatsapp/embedded-signup', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code,
-                waba_id: sessionInfo.waba_id,
-                phone_number_id: sessionInfo.phone_number_id,
-              }),
-            });
+            try {
+              const res = await fetch('/api/whatsapp/embedded-signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  code,
+                  waba_id: sessionInfo.waba_id,
+                  phone_number_id: sessionInfo.phone_number_id,
+                }),
+              });
 
-            const data = await res.json();
-            if (!res.ok || data.error) {
-              toast.error(data.error || 'Failed to complete WhatsApp Embedded Signup');
-              return;
+              const data = await res.json();
+              if (!res.ok || data.error) {
+                toast.error(data.error || 'Failed to complete WhatsApp Embedded Signup');
+                return;
+              }
+
+              toast.success(
+                data.phone_info?.verified_name
+                  ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
+                  : 'WhatsApp Connected Successfully!'
+              );
+
+              if (accountId) {
+                await fetchConfig(accountId);
+              }
+            } catch (err) {
+              console.error('Embedded signup exchange error:', err);
+              toast.error('Network error during WhatsApp account registration.');
+            } finally {
+              setEmbeddedLoading(false);
             }
-
-            toast.success(
-              data.phone_info?.verified_name
-                ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
-                : 'WhatsApp Connected Successfully!'
-            );
-
-            if (accountId) {
-              await fetchConfig(accountId);
-            }
-          } catch (err) {
-            console.error('Embedded signup exchange error:', err);
-            toast.error('Network error during WhatsApp account registration.');
-          } finally {
+          } else {
             setEmbeddedLoading(false);
+            toast.error(
+              response?.status === 'not_authorized'
+                ? 'WhatsApp login was not authorized.'
+                : 'WhatsApp login window was closed or cancelled.'
+            );
           }
-        } else {
+        })().catch((err) => {
+          console.error('[Embedded signup uncaught]', err);
           setEmbeddedLoading(false);
-          toast.error(
-            response?.status === 'not_authorized'
-              ? 'WhatsApp login was not authorized.'
-              : 'WhatsApp login window was closed or cancelled.'
-          );
-        }
+        });
       }, loginOptions);
     } catch (e: any) {
       finished = true;
