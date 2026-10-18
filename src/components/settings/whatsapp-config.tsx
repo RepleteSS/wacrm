@@ -1057,7 +1057,7 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
 
-        {/* Webhook URL */}
+        {/* Webhook Configuration */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">{t('webhookTitle')}</CardTitle>
@@ -1065,7 +1065,7 @@ export function WhatsAppConfig() {
               {t('webhookDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label className="text-muted-foreground">{t('webhookUrl')}</Label>
               <div className="flex gap-2">
@@ -1083,6 +1083,38 @@ export function WhatsAppConfig() {
                   <Copy className="size-4" />
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Webhook Verify Token</Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value="replete_wacrm_verify_token"
+                  className="bg-muted border-border text-muted-foreground font-mono text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText('replete_wacrm_verify_token');
+                    toast.success('Verify Token copied to clipboard');
+                  }}
+                  className="shrink-0 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Copy className="size-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                In Meta Developer Dashboard (<strong>WhatsApp &gt; Configuration &gt; Webhook</strong>), click <strong>Edit</strong>, paste this Callback URL and Verify Token, then click <strong>Verify and save</strong>.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-primary/20 bg-primary/[0.04] p-3 text-xs text-foreground space-y-1">
+              <p className="font-medium text-primary">🔔 Crucial Step for Incoming Messages:</p>
+              <p className="text-muted-foreground">
+                Under <strong>Webhook fields</strong> in your Meta App, click <strong>Manage</strong> and make sure <strong>messages</strong> is subscribed. Without this, Meta will not deliver customer messages to WACRM.
+              </p>
             </div>
           </CardContent>
         </Card>
