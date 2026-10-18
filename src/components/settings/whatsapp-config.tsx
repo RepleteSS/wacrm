@@ -299,45 +299,33 @@ export function WhatsAppConfig() {
 
     setEmbeddedLoading(true);
 
-    // Safety timeout: if popup is blocked or closed without firing callback within 15 seconds
-    let finished = false;
-    const safetyTimeout = setTimeout(() => {
-      if (!finished) {
-        finished = true;
-        setEmbeddedLoading(false);
-        toast.error(
-          'Popup did not respond or was blocked. Please check if your browser blocked popups for this site, and ensure https://wacrm.repleteequities.com is in your Meta App settings.'
-        );
-      }
-    }, 15000);
+    // Keep track of session info events emitted by the Meta popup (WABA ID and Phone Number ID)
+    let capturedSessionInfo: { waba_id?: string; phone_number_id?: string } = {};
 
-    // Session event listener for Embedded Signup (captures waba_id & phone_number_id)
-    const sessionInfoPromise = new Promise<{ waba_id?: string; phone_number_id?: string }>((resolve) => {
-      const messageHandler = (event: MessageEvent) => {
-        if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') {
-          return;
-        }
-        try {
-          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-          if (data?.type === 'WA_EMBEDDED_SIGNUP') {
-            if (data.event === 'FINISH') {
-              const { data: payloadData } = data;
-              resolve({
-                waba_id: payloadData?.waba_id,
-                phone_number_id: payloadData?.phone_number_id,
-              });
-              window.removeEventListener('message', messageHandler);
-            } else if (data.event === 'CANCEL') {
-              resolve({});
-              window.removeEventListener('message', messageHandler);
-            }
+    const messageHandler = (event: MessageEvent) => {
+      if (
+        event.origin !== 'https://www.facebook.com' &&
+        event.origin !== 'https://web.facebook.com'
+      ) {
+        return;
+      }
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'WA_EMBEDDED_SIGNUP') {
+          console.log('[WA_EMBEDDED_SIGNUP event]', data);
+          if (data.event === 'FINISH' && data.data) {
+            capturedSessionInfo = {
+              waba_id: data.data.waba_id,
+              phone_number_id: data.data.phone_number_id,
+            };
           }
-        } catch {
-          // Non-JSON message, ignore
         }
-      };
-      window.addEventListener('message', messageHandler);
-    });
+      } catch {
+        // Non-JSON message, ignore
+      }
+    };
+    window.addEventListener('message', messageHandler);
 
     const loginOptions: Record<string, unknown> = {
       response_type: 'code',
@@ -360,23 +348,12 @@ export function WhatsAppConfig() {
       // Meta Facebook JS SDK strictly forbids async functions as callbacks; use a synchronous function that spawns an async task
       FB.login((response: any) => {
         (async () => {
-          if (finished) return;
-          finished = true;
-          clearTimeout(safetyTimeout);
-
+          window.removeEventListener('message', messageHandler);
           console.log('[Meta FB.login response]', response);
 
           if (response.authResponse?.code) {
             const code = response.authResponse.code;
-            toast.info('Meta authorization granted. Finalizing connection...');
-
-            // Wait a short moment for WA_EMBEDDED_SIGNUP finish event if pending
-            const sessionInfo = await Promise.race([
-              sessionInfoPromise,
-              new Promise<{ waba_id?: string; phone_number_id?: string }>((res) =>
-                setTimeout(() => res({}), 2000)
-              ),
-            ]);
+            toast.info('Meta authorization granted. Connecting WhatsApp...');
 
             try {
               const res = await fetch('/api/whatsapp/embedded-signup', {
@@ -384,8 +361,8 @@ export function WhatsAppConfig() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   code,
-                  waba_id: sessionInfo.waba_id,
-                  phone_number_id: sessionInfo.phone_number_id,
+                  waba_id: capturedSessionInfo.waba_id,
+                  phone_number_id: capturedSessionInfo.phone_number_id,
                 }),
               });
 
@@ -412,11 +389,11 @@ export function WhatsAppConfig() {
             }
           } else {
             setEmbeddedLoading(false);
-            toast.error(
-              response?.status === 'not_authorized'
-                ? 'WhatsApp login was not authorized.'
-                : 'WhatsApp login window was closed or cancelled.'
-            );
+            if (response?.status === 'not_authorized') {
+              toast.error('WhatsApp login was not authorized.');
+            } else {
+              toast.info('WhatsApp login popup was closed or cancelled.');
+            }
           }
         })().catch((err) => {
           console.error('[Embedded signup uncaught]', err);
@@ -424,8 +401,7 @@ export function WhatsAppConfig() {
         });
       }, loginOptions);
     } catch (e: any) {
-      finished = true;
-      clearTimeout(safetyTimeout);
+      window.removeEventListener('message', messageHandler);
       setEmbeddedLoading(false);
       console.error('[Meta FB.login exception]', e);
       toast.error(e?.message || 'Failed to open Facebook login popup.');
