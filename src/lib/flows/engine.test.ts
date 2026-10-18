@@ -233,6 +233,12 @@ describe("matchesKeywordTrigger", () => {
     expect(matchesKeywordTrigger("support center", cfg)).toBe(true);
     expect(matchesKeywordTrigger("nope", cfg)).toBe(false);
   });
+
+  it("wildcard * or all matches any inbound text", () => {
+    expect(matchesKeywordTrigger("hello there", { keywords: ["*"] })).toBe(true);
+    expect(matchesKeywordTrigger("random message 123", { keywords: ["all"] })).toBe(true);
+    expect(matchesKeywordTrigger("random message 123", { keywords: ["ALL"] })).toBe(true);
+  });
 });
 
 describe("node classification helpers", () => {

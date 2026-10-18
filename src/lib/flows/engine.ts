@@ -103,6 +103,7 @@ export function matchesKeywordTrigger(
   const haystack = cfg.case_sensitive ? text : text.toLowerCase();
   for (const raw of cfg.keywords) {
     if (!raw) continue;
+    if (raw === "*" || raw.toLowerCase() === "all") return true;
     const needle = cfg.case_sensitive ? raw : raw.toLowerCase();
     if (matchType === "exact" ? haystack === needle : haystack.includes(needle)) {
       return true;
