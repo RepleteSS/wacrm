@@ -13,6 +13,7 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -122,6 +123,34 @@ export function WhatsAppConfig() {
   // multi-number bug that prompted this work.
   const isRegistered = Boolean(config?.registered_at);
   const lastRegistrationError = config?.last_registration_error ?? null;
+
+  const [embeddedLoading, setEmbeddedLoading] = useState(false);
+
+  // Load Meta Facebook JS SDK asynchronously for Embedded Signup
+  useEffect(() => {
+    const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
+    if (!metaAppId) return;
+
+    if (typeof window !== 'undefined' && !(window as any).FB) {
+      (window as any).fbAsyncInit = function () {
+        (window as any).FB.init({
+          appId: metaAppId,
+          cookie: true,
+          xfbml: true,
+          version: 'v21.0',
+        });
+      };
+
+      if (!document.getElementById('facebook-jssdk')) {
+        const js = document.createElement('script');
+        js.id = 'facebook-jssdk';
+        js.src = 'https://connect.facebook.net/en_US/sdk.js';
+        document.body.appendChild(js);
+      }
+    }
+  }, []);
+
+
 
   const [verifyingRegistration, setVerifyingRegistration] = useState(false);
   type RegistrationProbe = {
@@ -242,6 +271,119 @@ export function WhatsAppConfig() {
     loadedAccountIdRef.current = accountId;
     fetchConfig(accountId);
   }, [authLoading, profileLoading, user?.id, accountId, fetchConfig]);
+
+  const handleLaunchEmbeddedSignup = useCallback(async () => {
+    const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
+    const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID;
+
+    if (!metaAppId) {
+      toast.error('NEXT_PUBLIC_META_APP_ID is not configured in environment variables.');
+      return;
+    }
+
+    const FB = (window as any).FB;
+    if (!FB) {
+      toast.error('Meta Facebook SDK is still loading. Please try again in a moment.');
+      return;
+    }
+
+    setEmbeddedLoading(true);
+
+    // Session event listener for Embedded Signup (captures waba_id & phone_number_id)
+    const sessionInfoPromise = new Promise<{ waba_id?: string; phone_number_id?: string }>((resolve) => {
+      const messageHandler = (event: MessageEvent) => {
+        if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') {
+          return;
+        }
+        try {
+          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (data?.type === 'WA_EMBEDDED_SIGNUP') {
+            if (data.event === 'FINISH') {
+              const { data: payloadData } = data;
+              resolve({
+                waba_id: payloadData?.waba_id,
+                phone_number_id: payloadData?.phone_number_id,
+              });
+              window.removeEventListener('message', messageHandler);
+            } else if (data.event === 'CANCEL') {
+              resolve({});
+              window.removeEventListener('message', messageHandler);
+            }
+          }
+        } catch {
+          // Non-JSON message, ignore
+        }
+      };
+      window.addEventListener('message', messageHandler);
+    });
+
+    const loginOptions: Record<string, unknown> = {
+      scope: 'whatsapp_business_management,whatsapp_business_messaging',
+      response_type: 'code',
+      return_scopes: true,
+    };
+
+    if (configId) {
+      loginOptions.config_id = configId;
+    } else {
+      (loginOptions as any).extras = {
+        setup: {},
+        featureType: '',
+        sessionInfoVersion: '2',
+      };
+    }
+
+    FB.login(async (response: any) => {
+      if (response.authResponse?.code) {
+        const code = response.authResponse.code;
+        toast.info('Meta authorization granted. Finalizing connection...');
+
+        // Wait a short moment for WA_EMBEDDED_SIGNUP finish event if pending
+        const sessionInfo = await Promise.race([
+          sessionInfoPromise,
+          new Promise<{ waba_id?: string; phone_number_id?: string }>((res) =>
+            setTimeout(() => res({}), 2000)
+          ),
+        ]);
+
+        try {
+          const res = await fetch('/api/whatsapp/embedded-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              waba_id: sessionInfo.waba_id,
+              phone_number_id: sessionInfo.phone_number_id,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            toast.error(data.error || 'Failed to complete WhatsApp Embedded Signup');
+            return;
+          }
+
+          toast.success(
+            data.phone_info?.verified_name
+              ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
+              : 'WhatsApp Connected Successfully!'
+          );
+
+          if (accountId) {
+            await fetchConfig(accountId);
+          }
+        } catch (err) {
+          console.error('Embedded signup exchange error:', err);
+          toast.error('Network error during WhatsApp account registration.');
+        } finally {
+          setEmbeddedLoading(false);
+        }
+      } else {
+        setEmbeddedLoading(false);
+        toast.error('WhatsApp login was cancelled or not authorized.');
+      }
+    }, loginOptions);
+  }, [accountId, fetchConfig]);
 
   async function handleToggleMirrorMedia(next: boolean) {
     if (!config || !accountId || savingMirror) return;
@@ -739,10 +881,53 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
+        {/* One-Click Meta WhatsApp Onboarding Card */}
+        <Card className="border-primary/30 bg-primary/[0.03] overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              <CardTitle className="text-foreground">One-Click WhatsApp Connect</CardTitle>
+            </div>
+            <CardDescription className="text-muted-foreground">
+              Directly connect your WhatsApp Business number using official Meta Embedded Signup. Meta will automatically configure your WABA, verify your number, and grant all required permissions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-card/60 border border-border">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  Connect with WhatsApp Business
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Opens official Facebook login popup to choose your phone number.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleLaunchEmbeddedSignup}
+                disabled={embeddedLoading || !canEditSettings}
+                className="bg-[#25D366] hover:bg-[#20ba59] text-white font-medium shrink-0 shadow-sm"
+              >
+                {embeddedLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="size-4 mr-2" />
+                    Connect with WhatsApp
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* API Credentials */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">{t('apiCredentialsTitle')}</CardTitle>
+            <CardTitle className="text-foreground">Manual API Credentials</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t('apiCredentialsDesc')}
             </CardDescription>
