@@ -134,8 +134,8 @@ export async function POST(request: Request) {
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === 'true' ||
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === '1'
 
-    let metaTemplateId: string
-    let metaStatus: string
+    let metaTemplateId: string = ''
+    let metaStatus: string = 'PENDING'
 
     if (dryRun) {
       metaTemplateId = `dry-run-${crypto.randomUUID()}`
@@ -182,6 +182,7 @@ export async function POST(request: Request) {
       }
 
       const metaPayload = buildMetaTemplatePayload(payload)
+      let submitSuccess = false
       try {
         const meta = await submitMessageTemplate({
           wabaId: config.waba_id,
@@ -190,27 +191,79 @@ export async function POST(request: Request) {
         })
         metaTemplateId = meta.id
         metaStatus = meta.status
+        submitSuccess = true
       } catch (e) {
-        const message = e instanceof Error ? e.message : t('templates.metaSubmitFailed')
-        // Persist the failure so the user can retry; row stays DRAFT
-        // until they fix and re-submit.
-        await upsertTemplateRow(
-          supabase,
-          buildUpsertRow(accountId, userId, payload, {
-            status: 'DRAFT',
-            metaTemplateId: null,
-            submissionError: message,
-          }),
-        )
-        const isRateLimit = /\b429\b/.test(message)
-        return NextResponse.json(
-          {
-            error: isRateLimit
-              ? t('templates.rateLimit')
-              : message,
-          },
-          { status: isRateLimit ? 429 : 502 },
-        )
+        let message = e instanceof Error ? e.message : t('templates.metaSubmitFailed')
+
+        // If Meta returns #100 permission error, probe token debug to see if WABA is mismatched or scopes missing
+        if (message.includes('#100') || message.includes('permission')) {
+          const appId = process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID
+          const appSecret = process.env.META_APP_SECRET
+          if (appId && appSecret) {
+            try {
+              const debugRes = await fetch(
+                `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${appId}|${appSecret}`
+              )
+              const debugData = await debugRes.json()
+              const scopes = debugData.data?.scopes || []
+              const granularScopes = debugData.data?.granular_scopes || []
+              const wabaScope = granularScopes.find(
+                (s: { scope: string; target_ids?: string[] }) => s.scope === 'whatsapp_business_management'
+              )
+              const targetWabaId = wabaScope?.target_ids?.[0]
+
+              if (targetWabaId && targetWabaId !== config.waba_id) {
+                // Stored WABA ID was mismatched! Retry with the token's authorized WABA ID
+                try {
+                  const retryMeta = await submitMessageTemplate({
+                    wabaId: targetWabaId,
+                    accessToken,
+                    payload: metaPayload,
+                  })
+                  metaTemplateId = retryMeta.id
+                  metaStatus = retryMeta.status
+                  submitSuccess = true
+                  // Update database with the corrected WABA ID
+                  await supabase
+                    .from('whatsapp_config')
+                    .update({ waba_id: targetWabaId, updated_at: new Date().toISOString() })
+                    .eq('account_id', accountId)
+                  console.log(`[templates submit] Self-healed WABA ID: updated from ${config.waba_id} to ${targetWabaId}`)
+                } catch (retryErr) {
+                  message = retryErr instanceof Error ? retryErr.message : message
+                }
+              } else if (!scopes.includes('whatsapp_business_management')) {
+                message = `Token lacks "whatsapp_business_management" scope (has [${scopes.join(', ')}]). Generate a token with whatsapp_business_management in Meta Business Suite.`
+              } else {
+                message = `Meta rejected WABA ID "${config.waba_id}": (#100) Need permission. (Authorized WABAs for this token: ${targetWabaId || 'None'}). Verify WABA ID in Settings > WhatsApp.`
+              }
+            } catch (debugErr) {
+              console.warn('[templates submit] debug probe failed:', debugErr)
+            }
+          }
+        }
+
+        if (!submitSuccess) {
+          // Persist the failure so the user can retry; row stays DRAFT
+          // until they fix and re-submit.
+          await upsertTemplateRow(
+            supabase,
+            buildUpsertRow(accountId, userId, payload, {
+              status: 'DRAFT',
+              metaTemplateId: null,
+              submissionError: message,
+            }),
+          )
+          const isRateLimit = /\b429\b/.test(message)
+          return NextResponse.json(
+            {
+              error: isRateLimit
+                ? t('templates.rateLimit')
+                : message,
+            },
+            { status: isRateLimit ? 429 : 502 },
+          )
+        }
       }
     }
 
