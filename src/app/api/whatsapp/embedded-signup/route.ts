@@ -189,6 +189,7 @@ export async function POST(request: Request) {
     }
 
     // Step 4: Subscribe WABA to this Meta app
+    // This is REQUIRED for inbound webhooks — fail the save if it doesn't work
     let subscribedAppsAt: string | null = null
     if (resolvedWabaId) {
       try {
@@ -198,7 +199,16 @@ export async function POST(request: Request) {
         })
         subscribedAppsAt = new Date().toISOString()
       } catch (err) {
-        console.warn('[embedded-signup] subscribeWabaToApp warning:', err)
+        console.error('[embedded-signup] subscribeWabaToApp failed:', err)
+        return NextResponse.json(
+          {
+            error:
+              err instanceof Error
+                ? err.message
+                : 'Failed to subscribe WhatsApp Business Account to this app. The token needs whatsapp_business_management permission and the System User must be assigned to the WABA.',
+          },
+          { status: 400 }
+        )
       }
     }
 
@@ -244,7 +254,11 @@ export async function POST(request: Request) {
       verify_token: encryptedVerifyToken,
       status: 'connected',
       connected_at: new Date().toISOString(),
-      registered_at: new Date().toISOString(),
+      // Do NOT set registered_at here — /register was not called.
+      // The number must be registered via POST /{phone_number_id}/register
+      // with the 2FA PIN (done in the regular config save flow).
+      // Leaving this null shows "Not registered" banner with a path to complete it.
+      registered_at: null,
       subscribed_apps_at: subscribedAppsAt,
       last_registration_error: null,
       updated_at: new Date().toISOString(),
@@ -283,7 +297,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      // Credentials saved and WABA subscribed, but /register (for inbound webhooks)
+      // was NOT called — requires 2FA PIN. The UI will show "Not registered"
+      // with a path to enter PIN and complete registration via Save Configuration.
       connected: true,
+      registered: false,
+      registration_skipped: true,
       phone_info: phoneInfo,
       waba_id: resolvedWabaId,
       phone_number_id: resolvedPhoneNumberId,

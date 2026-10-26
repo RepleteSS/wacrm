@@ -352,6 +352,19 @@ export function WhatsAppConfig() {
           console.log('[Meta FB.login response]', response);
 
           if (response.authResponse?.code) {
+            // Verify required scopes were granted
+            const grantedScopes = response.authResponse.grantedScopes?.split(',') || []
+            const requiredScopes = ['whatsapp_business_management', 'whatsapp_business_messaging']
+            const missingScopes = requiredScopes.filter(s => !grantedScopes.includes(s))
+            if (missingScopes.length > 0) {
+              toast.error(
+                `Missing required permissions: ${missingScopes.join(', ')}. ` +
+                `Please re-authorize and allow all permissions in the Facebook popup.`
+              )
+              setEmbeddedLoading(false)
+              return
+            }
+
             const code = response.authResponse.code;
             toast.info('Meta authorization granted. Connecting WhatsApp...');
 
@@ -372,11 +385,20 @@ export function WhatsAppConfig() {
                 return;
               }
 
-              toast.success(
-                data.phone_info?.verified_name
-                  ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
-                  : 'WhatsApp Connected Successfully!'
-              );
+              if (data.registration_skipped) {
+                toast.success(
+                  data.phone_info?.verified_name
+                    ? `Connected: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number}). Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.`
+                    : 'WhatsApp connected! Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.',
+                  { duration: 12000 }
+                );
+              } else {
+                toast.success(
+                  data.phone_info?.verified_name
+                    ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
+                    : 'WhatsApp Connected Successfully!'
+                );
+              }
 
               if (accountId) {
                 await fetchConfig(accountId);
