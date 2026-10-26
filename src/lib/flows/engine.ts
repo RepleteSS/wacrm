@@ -43,6 +43,18 @@ import { decideFallback, resolveFallbackPolicy } from "./fallback";
 import { addContactTagAndDispatch } from "@/lib/contacts/tag-events";
 import { removeContactTag } from "@/lib/contacts/tag-write";
 import {
+  isOptOutMessage,
+  isHumanRequestMessage,
+  deriveVarKeyForNode,
+  evaluateProductSuitability,
+  persistAnswerToCrm,
+  persistRecommendationToCrm,
+  handleOptOutInCrm,
+  handleHumanHandoffInCrm,
+  isContactOptedOut,
+  REPETE_CUSTOM_FIELDS,
+} from "./qualification-engine";
+import {
   type CollectInputNodeConfig,
   type ConditionNodeConfig,
   type DispatchInboundInput,
@@ -89,24 +101,92 @@ export function matchReplyId(
   return null;
 }
 
+/** Letter, digit or underscore in any script — the "inside a word" boundary test. */
+const WORD_CHAR = '[\\p{L}\\p{N}_]';
+
 /**
- * Case-insensitive contains/exact match against a list of keywords.
- * Used by the trigger evaluator. Stable enough that the v3 builder
- * UI can preview matches by passing canned strings.
+ * Whole-word keyword test, Unicode-aware (matches `@/lib/automations/engine`).
+ * Prevents short keywords ("hi", "k") from firing on substrings ("which", "this", "thanks").
+ */
+export function matchesWholeWord(
+  text: string,
+  keyword: string,
+  caseSensitive = false,
+): boolean {
+  if (!keyword) return false;
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `(?<!${WORD_CHAR})${escaped}(?!${WORD_CHAR})`,
+    caseSensitive ? "u" : "iu",
+  );
+  return pattern.test(text);
+}
+
+/**
+ * Safe, explicit keyword matching for flow entry triggers.
+ *
+ * Supported match_types:
+ * - "exact": Strict equality check of trimmed strings.
+ * - "word": Unicode-aware whole-word boundary matching for all keywords.
+ * - "contains": Substring matching for phrases/longer keywords, with MANDATORY
+ *   whole-word boundary enforcement for short keywords (length <= 3, e.g. "hi", "hey")
+ *   so "hi" never matches inside words like "which", "this", or "shift".
+ *
+ * Negative keywords / exclusions:
+ * If cfg.negative_keywords is specified, matching any negative keyword immediately
+ * suppresses flow initiation. This ensures unrelated billing, support, payment,
+ * refund, or invoice enquiries do not start sales qualification.
  */
 export function matchesKeywordTrigger(
   text: string,
   cfg: KeywordTriggerConfig,
 ): boolean {
-  if (!text || !cfg.keywords?.length) return false;
+  if (!text || !cfg?.keywords?.length) return false;
+  const trimmedText = text.trim();
+  if (!trimmedText) return false;
+
+  // 1. Negative keyword suppression
+  if (cfg.negative_keywords && cfg.negative_keywords.length > 0) {
+    for (const neg of cfg.negative_keywords) {
+      if (!neg) continue;
+      const trimmedNeg = neg.trim();
+      if (!trimmedNeg) continue;
+      if (matchesWholeWord(trimmedText, trimmedNeg, cfg.case_sensitive)) {
+        return false;
+      }
+    }
+  }
+
   const matchType = cfg.match_type ?? "contains";
-  const haystack = cfg.case_sensitive ? text : text.toLowerCase();
+  const haystack = cfg.case_sensitive ? trimmedText : trimmedText.toLowerCase();
+
   for (const raw of cfg.keywords) {
     if (!raw) continue;
-    if (raw === "*" || raw.toLowerCase() === "all") return true;
-    const needle = cfg.case_sensitive ? raw : raw.toLowerCase();
-    if (matchType === "exact" ? haystack === needle : haystack.includes(needle)) {
-      return true;
+    const trimmedRaw = raw.trim();
+    if (!trimmedRaw) continue;
+    if (trimmedRaw === "*" || trimmedRaw.toLowerCase() === "all") return true;
+
+    if (matchType === "exact") {
+      const needle = cfg.case_sensitive ? trimmedRaw : trimmedRaw.toLowerCase();
+      if (haystack === needle) return true;
+    } else if (matchType === "word") {
+      if (matchesWholeWord(trimmedText, trimmedRaw, cfg.case_sensitive)) {
+        return true;
+      }
+    } else {
+      // match_type === 'contains'
+      // Safe matching: short keywords (<= 3 chars, like "hi", "hey") MUST use word boundary
+      // to avoid matching inside "which", "this", "shift", etc.
+      if (trimmedRaw.length <= 3) {
+        if (matchesWholeWord(trimmedText, trimmedRaw, cfg.case_sensitive)) {
+          return true;
+        }
+      } else {
+        const needle = cfg.case_sensitive ? trimmedRaw : trimmedRaw.toLowerCase();
+        if (haystack.includes(needle)) {
+          return true;
+        }
+      }
     }
   }
   return false;
@@ -494,6 +574,14 @@ async function executeHandoff(
       .update(convUpdate)
       .eq("id", run.conversation_id);
   }
+  if (run.contact_id) {
+    await handleHumanHandoffInCrm(db, {
+      contactId: run.contact_id,
+      accountId: run.account_id,
+      conversationId: run.conversation_id,
+      reason: cfg.note ?? "Flow handoff node reached",
+    });
+  }
   await logEvent(db, run.id, "handoff", node.node_key, {
     note: cfg.note ?? null,
     assigned_to: cfg.assign_to ?? null,
@@ -636,6 +724,21 @@ async function advanceFromNodeKey(
     await logEvent(db, run.id, "node_entered", node.node_key, {
       node_type: node.node_type,
     });
+
+    // WhatsApp Compliance: Pre-outbound suppression check before any message delivery
+    if (
+      ["send_message", "send_media", "collect_input", "send_buttons", "send_list"].includes(
+        node.node_type,
+      ) &&
+      run.contact_id &&
+      (await isContactOptedOut(db, run.contact_id))
+    ) {
+      await logEvent(db, run.id, "error", node.node_key, {
+        reason: "outbound_suppressed_contact_opted_out",
+      });
+      await endRun(db, run.id, "completed", "opted_out_suppression");
+      return { outcome: "completed" };
+    }
 
     if (node.node_type === "start") {
       currentKey = (node.config as unknown as StartNodeConfig).next_node_key;
@@ -924,11 +1027,73 @@ export async function dispatchInboundToFlows(
 ): Promise<DispatchInboundResult> {
   const db = supabaseAdmin();
   try {
+    const inboundText = input.message.kind === "text" ? input.message.text : "";
+
+    // 1. WhatsApp Compliance: Opt-out handling on incoming message (STOP, UNSUBSCRIBE, CANCEL, etc.)
+    if (isOptOutMessage(inboundText)) {
+      await handleOptOutInCrm(db, {
+        contactId: input.contactId,
+        accountId: input.accountId,
+      });
+      const activeRun = await loadActiveRunForContact(
+        db,
+        input.accountId,
+        input.contactId,
+      );
+      if (activeRun) {
+        await logEvent(db, activeRun.id, "completed", activeRun.current_node_key, {
+          reason: "contact_opted_out",
+        });
+        await endRun(db, activeRun.id, "completed", "opt_out");
+      }
+      return {
+        consumed: true,
+        flow_run_id: activeRun?.id,
+        outcome: "no_match",
+      };
+    }
+
+    // 2. WhatsApp Compliance: Suppression if contact is already marked opted out
+    if (await isContactOptedOut(db, input.contactId)) {
+      const activeRun = await loadActiveRunForContact(
+        db,
+        input.accountId,
+        input.contactId,
+      );
+      if (activeRun) {
+        await endRun(db, activeRun.id, "completed", "contact_suppressed_opt_out");
+      }
+      return {
+        consumed: true,
+        flow_run_id: activeRun?.id,
+        outcome: "no_match",
+      };
+    }
+
     const activeRun = await loadActiveRunForContact(
       db,
       input.accountId,
       input.contactId,
     );
+
+    // 3. User requesting human assistance via incoming message
+    if (activeRun && isHumanRequestMessage(inboundText)) {
+      await handleHumanHandoffInCrm(db, {
+        contactId: input.contactId,
+        accountId: input.accountId,
+        conversationId: activeRun.conversation_id,
+        reason: `Prospect requested human assistance: "${inboundText}"`,
+      });
+      await logEvent(db, activeRun.id, "handoff", activeRun.current_node_key, {
+        reason: "user_requested_human",
+      });
+      await endRun(db, activeRun.id, "handed_off", "user_requested_human");
+      return {
+        consumed: true,
+        flow_run_id: activeRun.id,
+        outcome: "handed_off",
+      };
+    }
 
     // Idempotency — only matters if there's already a run for this
     // contact. For new runs, the partial unique index catches duplicate
@@ -1023,6 +1188,68 @@ async function handleReplyForActiveRun(
       currentNode.node_type === "send_list")
   ) {
     matched = matchReplyId(currentNode, message.reply_id);
+    if (matched) {
+      // Capture variable into run.vars for qualification engine
+      const varKey = deriveVarKeyForNode(currentNode.node_key);
+      if (varKey) {
+        const newVars = { ...run.vars, [varKey]: message.reply_id };
+        const { error: capErr } = await db
+          .from("flow_runs")
+          .update({
+            vars: newVars,
+            reprompt_count: 0,
+          })
+          .eq("id", run.id);
+        if (!capErr) {
+          run.vars = newVars;
+          run.reprompt_count = 0;
+        }
+
+        // Persist answer to CRM
+        if (run.contact_id) {
+          await persistAnswerToCrm(
+            db,
+            run.contact_id,
+            currentNode.node_key,
+            message.reply_id,
+          );
+        }
+      }
+
+      // Check if answering Question 8 (Readiness) -> Complete Qualification & Deterministic Recommendation
+      if (
+        currentNode.node_key === "branch_foundations_q8" ||
+        currentNode.node_key === "branch_execution_q8" ||
+        currentNode.node_key === "branch_mentorship_q8" ||
+        currentNode.node_key === "branch_unsure_q8"
+      ) {
+        const recResult = evaluateProductSuitability(
+          run.vars as any,
+          run.reprompt_count,
+        );
+
+        if (run.contact_id) {
+          await persistRecommendationToCrm(db, {
+            contactId: run.contact_id,
+            accountId: run.account_id,
+            userId: run.user_id,
+            conversationId: run.conversation_id,
+            result: recResult,
+          });
+        }
+
+        // Deterministic routing based on suitability
+        if (recResult.product === "foundations") {
+          matched = "recommendation_foundations";
+        } else if (recResult.product === "execution_system") {
+          matched = "recommendation_execution";
+        } else if (recResult.product === "mentorship") {
+          matched = "recommendation_mentorship";
+        } else {
+          matched = "recommendation_unsure_review";
+        }
+      }
+    }
   } else if (
     message.kind === "text" &&
     currentNode.node_type === "collect_input"
@@ -1183,6 +1410,36 @@ async function startNewRun(
     return { consumed: false, outcome: "no_match" };
   }
   const run = inserted as FlowRunRow;
+  if (input.contactId) {
+    try {
+      const q = db.from("contact_custom_values");
+      if (typeof q.upsert === "function") {
+        await q.upsert(
+          [
+            {
+              contact_id: input.contactId,
+              custom_field_id: REPETE_CUSTOM_FIELDS.CONSENT_STATUS,
+              value: "service_window_only",
+            },
+            {
+              contact_id: input.contactId,
+              custom_field_id: REPETE_CUSTOM_FIELDS.CONSENT_TIMESTAMP,
+              value: new Date().toISOString(),
+            },
+            {
+              contact_id: input.contactId,
+              custom_field_id: REPETE_CUSTOM_FIELDS.CURRENT_STAGE,
+              value: "New Lead",
+            },
+          ],
+          { onConflict: "contact_id,custom_field_id" },
+        );
+      }
+    } catch (e) {
+      console.warn("[flows] consent recording error:", e);
+    }
+  }
+
   await logEvent(db, run.id, "started", flow.entry_node_id, {
     flow_id: flow.id,
     trigger_type: flow.trigger_type,

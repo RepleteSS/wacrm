@@ -75,6 +75,16 @@ describe('ensureMediaHeaderHandle', () => {
     await expect(ensureMediaHeaderHandle(p, 'tok')).rejects.toThrow(/META_APP_ID/);
   });
 
+  it('falls back to NEXT_PUBLIC_META_APP_ID when META_APP_ID is unset', async () => {
+    vi.stubEnv('NEXT_PUBLIC_META_APP_ID', 'fallback-app-123');
+    vi.stubGlobal('fetch', vi.fn(async () => mediaResponse('image/jpeg', 2048)));
+    const p = payload();
+    await ensureMediaHeaderHandle(p, 'tok');
+    expect(uploadResumableMedia).toHaveBeenCalledOnce();
+    expect(vi.mocked(uploadResumableMedia).mock.calls[0][0].appId).toBe('fallback-app-123');
+    expect(p.header_handle).toBe('HANDLE123');
+  });
+
   describe('image headers (unchanged from #230)', () => {
     it('derives + sets header_handle from a valid image URL', async () => {
       vi.stubEnv('META_APP_ID', 'app-1');

@@ -206,7 +206,10 @@ export async function GET() {
     if (config.waba_id) {
       try {
         const subs = await getSubscribedApps({ wabaId: config.waba_id, accessToken })
-        const state = appSubscriptionState(subs, process.env.META_APP_ID)
+        const state = appSubscriptionState(
+          subs,
+          process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID,
+        )
         wabaSubscription = {
           checked: true,
           subscribed: state.subscribed,

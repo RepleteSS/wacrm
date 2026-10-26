@@ -165,4 +165,13 @@ describe('template lifecycle role gate (GHSA-m4fx-g6pr-hrw8)', () => {
     expect(deleted.status).toBe(200)
     expect(meta.deleteMessageTemplate).toHaveBeenCalledTimes(1)
   })
+
+  it('cleans up local row when Meta delete fails with #100 permission / not found', async () => {
+    meta.deleteMessageTemplate.mockRejectedValueOnce(
+      new Error('(#100) Need permission on either WhatsApp Business Account or owner/shared business.')
+    )
+    const deleted = await DELETE(new Request('http://localhost/t'), { params })
+    expect(deleted.status).toBe(200)
+    expect(templateDeletes).toBe(1)
+  })
 })

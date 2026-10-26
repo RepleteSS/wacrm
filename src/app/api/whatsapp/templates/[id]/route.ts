@@ -277,8 +277,16 @@ export async function DELETE(
           metaTemplateId: existing.meta_template_id,
         })
       } catch (e) {
-        const message = e instanceof Error ? e.message : t('templates.metaDeleteFailed')
-        return NextResponse.json({ error: message }, { status: 502 })
+        const message = e instanceof Error ? e.message : t('templates.metaDeleteFailed');
+        const isOrphaned =
+          message.includes('#100') ||
+          message.toLowerCase().includes('not found') ||
+          message.toLowerCase().includes('does not exist') ||
+          message.includes('404');
+        if (!isOrphaned) {
+          return NextResponse.json({ error: message }, { status: 502 });
+        }
+        console.warn(`[templates DELETE] Meta deletion failed for "${existing.name}" (${message}); removing local record anyway.`);
       }
     }
 

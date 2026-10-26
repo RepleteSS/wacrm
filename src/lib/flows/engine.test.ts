@@ -239,6 +239,68 @@ describe("matchesKeywordTrigger", () => {
     expect(matchesKeywordTrigger("random message 123", { keywords: ["all"] })).toBe(true);
     expect(matchesKeywordTrigger("random message 123", { keywords: ["ALL"] })).toBe(true);
   });
+
+  it("never matches short keyword 'hi' inside words like 'which', 'this', or 'shift'", () => {
+    const cfg = { keywords: ["hi"], match_type: "contains" as const };
+    expect(matchesKeywordTrigger("which product is best?", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("what is this?", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("shift my appointment", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("white background", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("history of markets", cfg)).toBe(false);
+
+    // Legitimate greetings matching 'hi' with word boundary
+    expect(matchesKeywordTrigger("hi", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Hi", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("hi there", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Hi! I want to join", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("say hi", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("   hi   ", cfg)).toBe(true);
+  });
+
+  it("supports match_type='word' requiring whole-word boundaries for all keywords", () => {
+    const cfg = {
+      keywords: ["start", "trading", "products"],
+      match_type: "word" as const,
+    };
+    expect(matchesKeywordTrigger("let's start now", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("interested in trading", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("show me your products!", cfg)).toBe(true);
+
+    // Partial word substrings do not match under match_type='word'
+    expect(matchesKeywordTrigger("startled by the market", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("extradition treaty", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("production environment", cfg)).toBe(false);
+  });
+
+  it("suppresses flow entry when negative keywords (support, payment, refund, invoice) are present", () => {
+    const cfg = {
+      keywords: ["hi", "hello", "start", "replete"],
+      match_type: "word" as const,
+      negative_keywords: [
+        "support",
+        "payment",
+        "refund",
+        "invoice",
+        "bill",
+        "billing",
+        "receipt",
+        "chargeback",
+        "cancel",
+      ],
+    };
+
+    // Innocent greetings that contain negative keywords should NOT start sales flow
+    expect(matchesKeywordTrigger("Hi, I have a problem with my payment", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("Hello, where can I download my invoice?", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("Hi, I want a refund for yesterday's purchase", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("Hi, connects me with customer support", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("Start my refund process", cfg)).toBe(false);
+
+    // Legitimate sales queries without negative keywords match cleanly
+    expect(matchesKeywordTrigger("Hi, I want to learn trading with Replete", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Hello! What products do you offer?", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Start qualification", cfg)).toBe(true);
+  });
 });
 
 describe("node classification helpers", () => {

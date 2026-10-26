@@ -36,7 +36,7 @@ export async function ensureMediaHeaderHandle(
 
   const spec = MEDIA_HEADER_SPECS[kind]
 
-  const appId = process.env.META_APP_ID
+  const appId = process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID
   if (!appId) {
     throw new Error(t('metaAppIdRequired'))
   }

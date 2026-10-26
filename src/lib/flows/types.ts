@@ -205,8 +205,13 @@ export type FlowNodeType = FlowNodeConfig["node_type"];
 export interface KeywordTriggerConfig {
   /** One or more keywords. Match is case-insensitive by default. */
   keywords: string[];
-  match_type?: "exact" | "contains";
+  match_type?: "exact" | "contains" | "word";
   case_sensitive?: boolean;
+  /**
+   * Optional exclusion/negative keywords that prevent trigger matching if present in inbound message.
+   * Prevents unrelated support, payment, refund, billing, or invoice enquiries from starting a sales qualification flow.
+   */
+  negative_keywords?: string[];
 }
 
 // No knobs in v1 — the trigger has a single semantic. Kept as a type
