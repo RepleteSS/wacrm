@@ -352,17 +352,22 @@ export function WhatsAppConfig() {
           console.log('[Meta FB.login response]', response);
 
           if (response.authResponse?.code) {
-            // Verify required scopes were granted
-            const grantedScopes = response.authResponse.grantedScopes?.split(',') || []
-            const requiredScopes = ['whatsapp_business_management', 'whatsapp_business_messaging']
-            const missingScopes = requiredScopes.filter(s => !grantedScopes.includes(s))
-            if (missingScopes.length > 0) {
-              toast.error(
-                `Missing required permissions: ${missingScopes.join(', ')}. ` +
-                `Please re-authorize and allow all permissions in the Facebook popup.`
-              )
-              setEmbeddedLoading(false)
-              return
+            // Verify scopes only when Meta returns grantedScopes —
+            // the config_id flow (standard Embedded Signup) doesn't
+            // include it since scopes are pre-configured in the Meta app.
+            const grantedScopes = response.authResponse.grantedScopes
+            if (grantedScopes) {
+              const grantedList = grantedScopes.split(',')
+              const requiredScopes = ['whatsapp_business_management', 'whatsapp_business_messaging']
+              const missingScopes = requiredScopes.filter(s => !grantedList.includes(s))
+              if (missingScopes.length > 0) {
+                toast.error(
+                  `Missing required permissions: ${missingScopes.join(', ')}. ` +
+                  `Please re-authorize and allow all permissions in the Facebook popup.`
+                )
+                setEmbeddedLoading(false)
+                return
+              }
             }
 
             const code = response.authResponse.code;
