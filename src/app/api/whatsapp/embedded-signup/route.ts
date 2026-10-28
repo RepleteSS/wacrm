@@ -5,7 +5,7 @@ import {
   subscribeWabaToApp,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
-import { encrypt } from '@/lib/whatsapp/encryption'
+import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
 import { resolveVerifyTokenForSave } from '@/lib/whatsapp/verify-token'
 import { getT } from '@/lib/i18n/translate'
 
@@ -168,6 +168,13 @@ export async function POST(request: Request) {
       )
     }
 
+    // Lookup existing config for this account (needed for verify_token)
+    const { data: existing } = await supabase
+      .from('whatsapp_config')
+      .select('id, verify_token')
+      .eq('account_id', accountId)
+      .maybeSingle()
+
     // Step 3: Verify phone number details
     let phoneInfo
     try {
@@ -212,37 +219,79 @@ export async function POST(request: Request) {
       }
     }
 
-    // Automatically configure Meta App webhook subscription for messages if not already done
+    // Step 5: Configure Meta App webhook subscription for messages
+    // This is REQUIRED for inbound webhooks — fail the save if it doesn't work
+    const appToken = `${appId}|${appSecret}`
+    const subUrl = `${META_API_BASE}/${appId}/subscriptions`
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    if (!siteUrl) {
+      return NextResponse.json(
+        {
+          error:
+            'NEXT_PUBLIC_SITE_URL must be configured in environment variables for webhook configuration.',
+        },
+        { status: 500 }
+      )
+    }
+    const webhookCallback = `${siteUrl.replace(/\/$/, '')}/api/whatsapp/webhook`
+    // Use the same verify token that will be stored in whatsapp_config
+    const verifyTokenForWebhook = existing?.verify_token
+      ? decrypt(existing.verify_token)
+      : 'replete_wacrm_verify_token'
+
     try {
-      const appToken = `${appId}|${appSecret}`
-      const subUrl = `${META_API_BASE}/${appId}/subscriptions`
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wacrm.repleteequities.com'
-      const webhookCallback = `${siteUrl.replace(/\/$/, '')}/api/whatsapp/webhook`
-      const body = new URLSearchParams({
+      // Create/update the app subscription
+      const subBody = new URLSearchParams({
         object: 'whatsapp_business_account',
         callback_url: webhookCallback,
-        verify_token: 'replete_wacrm_verify_token',
+        verify_token: verifyTokenForWebhook,
         fields: 'messages',
       })
-      await fetch(subUrl, {
+      const subRes = await fetch(subUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${appToken}` },
-        body,
+        body: subBody,
       })
+      if (!subRes.ok) {
+        const errData = await subRes.json().catch(() => ({}))
+        console.error('[embedded-signup] App webhook subscription failed:', errData)
+        return NextResponse.json(
+          {
+            error:
+              `Failed to configure app webhook subscription: ${errData.error?.message || subRes.status}. ` +
+              `Ensure META_APP_SECRET is correct and the app has WhatsApp Business API product added.`,
+          },
+          { status: 400 }
+        )
+      }
+
+      // Verify the subscription was created by fetching current subscriptions
+      const verifyRes = await fetch(subUrl, {
+        headers: { Authorization: `Bearer ${appToken}` },
+      })
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json()
+        const hasOurSubscription = verifyData.data?.some(
+          (s: any) => s.callback_url === webhookCallback && s.fields?.includes('messages')
+        )
+        if (!hasOurSubscription) {
+          console.warn('[embedded-signup] Subscription created but not found in list - may need manual verification')
+        }
+      }
+      console.log('[embedded-signup] App webhook subscription configured successfully:', webhookCallback)
     } catch (e) {
-      console.warn('[embedded-signup] auto app subscription warning:', e)
+      console.error('[embedded-signup] App webhook subscription error:', e)
+      return NextResponse.json(
+        {
+          error:
+            'Failed to configure app webhook subscription. Check server logs and ensure META_APP_SECRET is valid.',
+        },
+        { status: 400 }
+      )
     }
 
     // Encrypt token
     const encryptedAccessToken = encrypt(accessToken)
-
-    // Lookup existing config for this account
-    const { data: existing } = await supabase
-      .from('whatsapp_config')
-      .select('id, verify_token')
-      .eq('account_id', accountId)
-      .maybeSingle()
-
     const encryptedVerifyToken = existing?.verify_token
       ? existing.verify_token
       : encrypt('replete_wacrm_verify_token')
