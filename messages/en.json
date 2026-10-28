@@ -173,7 +173,19 @@
       "clearAll": "Clear all",
       "noConversations": "No conversations found",
       "noMessagesYet": "No messages yet",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "cancel": "Cancel",
+      "deleteConversationAria": "Delete conversation with {name}",
+      "deleteConversationSuccess": "Conversation deleted",
+      "deleteConversationFailed": "Failed to delete conversation",
+      "deleteMediaLeftBehind": "Conversation deleted, but {count} attachment(s) could not be removed from storage",
+      "clearInbox": "Clear inbox",
+      "clearInboxTitle": "Clear all conversations?",
+      "clearInboxDesc": "This deletes all {count} conversation(s) and every message, reaction and notification in them, along with their attachments. Your contacts, tags and deals are kept. This cannot be undone.",
+      "clearInboxConfirm": "Clear inbox",
+      "clearInboxSuccess": "Deleted {count} conversation(s)",
+      "clearInboxEmpty": "There are no conversations to delete",
+      "clearInboxFailed": "Failed to clear the inbox"
     },
     "messageThread": {
       "backToConversations": "Back to conversations",

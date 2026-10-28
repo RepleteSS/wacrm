@@ -173,7 +173,19 @@
       "clearAll": "Limpiar todo",
       "noConversations": "No se encontraron conversaciones",
       "noMessagesYet": "Aún no hay mensajes",
-      "unknown": "Desconocido"
+      "unknown": "Desconocido",
+      "cancel": "Cancelar",
+      "deleteConversationAria": "Eliminar conversación con {name}",
+      "deleteConversationSuccess": "Conversación eliminada",
+      "deleteConversationFailed": "No se pudo eliminar la conversación",
+      "deleteMediaLeftBehind": "Conversación eliminada, pero no se pudieron quitar {count} archivo(s) adjunto(s) del almacenamiento",
+      "clearInbox": "Limpiar bandeja",
+      "clearInboxTitle": "¿Eliminar todas las conversaciones?",
+      "clearInboxDesc": "Esto elimina las {count} conversación(es) y todos los mensajes, reacciones y notificaciones que contienen, junto con sus archivos adjuntos. Tus contactos, etiquetas y tratos se conservan. Esto no se puede deshacer.",
+      "clearInboxConfirm": "Limpiar bandeja",
+      "clearInboxSuccess": "Se eliminaron {count} conversación(es)",
+      "clearInboxEmpty": "No hay conversaciones para eliminar",
+      "clearInboxFailed": "No se pudo limpiar la bandeja"
     },
     "messageThread": {
       "backToConversations": "Volver a las conversaciones",

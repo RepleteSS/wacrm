@@ -501,6 +501,29 @@ function InboxPageInner() {
     router.replace("/inbox", { scroll: false });
   }, [router]);
 
+  /**
+   * A conversation was just deleted — one row, or the whole list via
+   * "Clear inbox". Drop it from the list, and if the user was reading
+   * it, close the thread the same way the back button does. Without
+   * this the centre pane keeps rendering a thread whose rows are gone
+   * and MessageThread keeps paging a conversation that no longer exists.
+   */
+  const handleConversationsDeleted = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      const removed = new Set(ids);
+      setConversations((prev) => prev.filter((c) => !removed.has(c.id)));
+
+      if (!activeConversation || !removed.has(activeConversation.id)) return;
+      setActiveConversation(null);
+      setActiveContact(null);
+      setMessages([]);
+      autoSelectedForDeepLinkRef.current = null;
+      router.replace("/inbox", { scroll: false });
+    },
+    [activeConversation, router]
+  );
+
 
   const handleMessagesLoaded = useCallback((loaded: Message[]) => {
     setMessages(loaded);
@@ -589,6 +612,7 @@ function InboxPageInner() {
             onSelect={handleSelectConversation}
             conversations={conversations}
             onConversationsLoaded={handleConversationsLoaded}
+            onDeleted={handleConversationsDeleted}
             resyncToken={resyncToken}
           />
         </div>

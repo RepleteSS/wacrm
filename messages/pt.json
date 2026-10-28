@@ -173,7 +173,19 @@
       "clearAll": "Limpar tudo",
       "noConversations": "Nenhuma conversa encontrada",
       "noMessagesYet": "Nenhuma mensagem ainda",
-      "unknown": "Desconhecido"
+      "unknown": "Desconhecido",
+      "cancel": "Cancelar",
+      "deleteConversationAria": "Excluir conversa com {name}",
+      "deleteConversationSuccess": "Conversa excluída",
+      "deleteConversationFailed": "Falha ao excluir a conversa",
+      "deleteMediaLeftBehind": "Conversa excluída, mas {count} anexo(s) não puderam ser removidos do armazenamento",
+      "clearInbox": "Limpar caixa de entrada",
+      "clearInboxTitle": "Limpar todas as conversas?",
+      "clearInboxDesc": "Isso exclui todas as {count} conversa(s) e todas as mensagens, reações e notificações nelas, junto com os anexos. Seus contatos, tags e negócios são mantidos. Isso não pode ser desfeito.",
+      "clearInboxConfirm": "Limpar caixa de entrada",
+      "clearInboxSuccess": "{count} conversa(s) excluída(s)",
+      "clearInboxEmpty": "Não há conversas para excluir",
+      "clearInboxFailed": "Falha ao limpar a caixa de entrada"
     },
     "messageThread": {
       "backToConversations": "Voltar às conversas",
