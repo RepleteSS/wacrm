@@ -59,6 +59,26 @@ describe("explainMetaError — permissions", () => {
     expect(x.summary).toMatch(/Phone Number ID 123456789/);
     expect(x.summary).toMatch(/Assign the System User/);
   });
+
+  it("maps the (#100) asset-permission refusal to a token/System-User fix, not a bad-id fix", () => {
+    const x = explainMetaError(
+      metaErr({
+        code: 100,
+        message:
+          "(#100) Need either permission on WhatsApp Business Account or owner business.",
+      }),
+      "register",
+      { phoneNumberId: "987654321" },
+    );
+    expect(x.field).toBe("access_token");
+    expect(x.side).toBe("user");
+    expect(x.httpStatus).toBe(400);
+    expect(x.summary).toMatch(/System Users/);
+    expect(x.summary).toMatch(/whatsapp_business_messaging/);
+    expect(x.summary).toMatch(/Phone Number ID 987654321/);
+    // Must not fall through to the "copy the id exactly" hint — the ids are fine.
+    expect(x.summary).not.toMatch(/copied exactly/);
+  });
 });
 
 describe("explainMetaError — wrong object ids", () => {

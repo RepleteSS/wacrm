@@ -8,11 +8,65 @@ import {
 } from '@/lib/whatsapp/meta-api'
 import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
 import { resolveVerifyTokenForSave } from '@/lib/whatsapp/verify-token'
+import { explainMetaError, type MetaErrorContext } from '@/lib/whatsapp/meta-error-explain'
 import { getT } from '@/lib/i18n/translate'
 
 const t = getT('Api')
 const META_API_VERSION = 'v21.0'
 const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
+
+/** One entry of `debug_token`'s `granular_scopes` — scope name + the asset ids it was granted on. */
+type GranularScope = { scope: string; target_ids?: string[] }
+
+/**
+ * True when Meta refused a call because the token has no asset-level
+ * permission on the WABA — "(#100) Need either permission on WhatsApp
+ * Business Account or owner business". The OAuth token minted by a
+ * config_id Embedded Signup only carries what the app's Embedded Signup
+ * config lists, so /register can hit this even though the same token
+ * worked for reading phone numbers.
+ */
+function isPermissionRefusal(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const code = (err as { code?: unknown }).code
+  if (typeof code !== 'number' || code !== 100) return false
+  return /need either permission|permission on whatsapp business account|owner business/i.test(
+    err.message,
+  )
+}
+
+/**
+ * Turn a /register failure into actionable text. Base text comes from
+ * explainMetaError; when we could read the token's granular scopes and
+ * `whatsapp_business_messaging` isn't among them, append the concrete
+ * place to grant it (that permission is what /register actually checks).
+ */
+function explainRegistrationFailure(
+  err: unknown,
+  granularScopes: GranularScope[],
+  ctx: MetaErrorContext = {},
+): string {
+  const explained = explainMetaError(err, 'register', ctx)
+
+  const grantedScopes = new Set(granularScopes.map((s) => s.scope))
+  const missingMessaging = !grantedScopes.has('whatsapp_business_messaging')
+  const missingManagement = !grantedScopes.has('whatsapp_business_management')
+
+  if (missingMessaging || missingManagement) {
+    const missing = [
+      ...(missingManagement ? ['whatsapp_business_management'] : []),
+      ...(missingMessaging ? ['whatsapp_business_messaging'] : []),
+    ].join(' and ')
+    return (
+      `${explained.summary} The Embedded Signup token is missing ${missing}. ` +
+      'Add it to the permission list of your Meta App → WhatsApp → Embedded Signup configuration ' +
+      'and connect again, or paste a permanent System User token with those permissions into ' +
+      'Permanent Access Token and save.'
+    )
+  }
+
+  return explained.summary
+}
 
 function supabaseAdmin() {
   return createAdminClient(
@@ -115,23 +169,37 @@ export async function POST(request: Request) {
 
     const accessToken = tokenData.access_token as string
 
-    // Step 2: Resolve Phone Number ID & WABA ID if not provided by the frontend sessionInfo
+    // Step 2: Resolve Phone Number ID & WABA ID if not provided by the frontend
+    // sessionInfo. Also read the granular scopes this OAuth token actually
+    // carries — a config_id Embedded Signup only grants what the app's
+    // Embedded Signup config lists, and /register needs an asset-level
+    // permission on the WABA (issue: "(#100) Need either permission on
+    // WhatsApp Business Account or owner business").
     let resolvedWabaId = waba_id
     let resolvedPhoneNumberId = phone_number_id
 
-    if (!resolvedWabaId || !resolvedPhoneNumberId) {
-      // Query debug_token to find granular scopes and target WABA
+    let granularScopes: GranularScope[] = []
+    try {
       const debugUrl = `${META_API_BASE}/debug_token?input_token=${accessToken}&access_token=${appId}|${appSecret}`
       const debugRes = await fetch(debugUrl)
       const debugData = await debugRes.json()
+      granularScopes = debugData.data?.granular_scopes || []
+      console.log(
+        '[embedded-signup] token scopes:',
+        granularScopes.map((s) => `${s.scope}[${(s.target_ids || []).join(',')}]`).join(' ') || '(none)'
+      )
+    } catch (err) {
+      // Diagnostic only — never fatal; scope diagnosis below degrades to
+      // a generic message when we couldn't read them.
+      console.warn('[embedded-signup] debug_token read failed:', err)
+    }
 
-      const granularScopes = debugData.data?.granular_scopes || []
+    if (!resolvedWabaId) {
       const wabaScope = granularScopes.find(
-        (s: { scope: string; target_ids?: string[] }) =>
-          s.scope === 'whatsapp_business_management'
+        (s) => s.scope === 'whatsapp_business_management'
       )
       if (wabaScope?.target_ids?.[0]) {
-        resolvedWabaId = resolvedWabaId || wabaScope.target_ids[0]
+        resolvedWabaId = wabaScope.target_ids[0]
       }
     }
 
@@ -322,10 +390,40 @@ export async function POST(request: Request) {
         })
         registeredAt = new Date().toISOString()
       } catch (err) {
-        // Save the credentials anyway (so the OAuth token isn't lost) and
-        // report the specific reason — mirrors the regular config save.
-        registrationError = err instanceof Error ? err.message : 'Failed to register the phone number.'
-        console.error('[embedded-signup] registerPhoneNumber failed:', registrationError)
+        // The OAuth token from Embedded Signup only carries the permissions
+        // the app's Embedded Signup config lists, and /register insists on an
+        // asset-level permission on the WABA — "(#100) Need either permission
+        // on WhatsApp Business Account or owner business". Retry once with
+        // the app access token, which has app-level rights over every WABA
+        // created through this app's Embedded Signup.
+        if (isPermissionRefusal(err)) {
+          console.warn(
+            '[embedded-signup] user token refused /register; retrying with app access token'
+          )
+          try {
+            await registerPhoneNumber({
+              phoneNumberId: resolvedPhoneNumberId,
+              accessToken: `${appId}|${appSecret}`,
+              pin,
+            })
+            registeredAt = new Date().toISOString()
+          } catch (appErr) {
+            registrationError = explainRegistrationFailure(appErr, granularScopes, {
+              phoneNumberId: resolvedPhoneNumberId,
+              wabaId: resolvedWabaId,
+            })
+          }
+        } else {
+          registrationError = explainRegistrationFailure(err, granularScopes, {
+            phoneNumberId: resolvedPhoneNumberId,
+            wabaId: resolvedWabaId,
+          })
+        }
+        if (registeredAt) {
+          console.log('[embedded-signup] phone number registered via app token fallback')
+        } else {
+          console.error('[embedded-signup] registerPhoneNumber failed:', registrationError)
+        }
       }
     }
 
