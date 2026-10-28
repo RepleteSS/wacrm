@@ -214,7 +214,8 @@ export function explainMetaError(
   // --- Token lacks asset-level permission on the WABA ----------------------
   // "(#100) Need either permission on WhatsApp Business Account or owner
   // business" — the token can read the object but has no write-level grant
-  // on it (typical for a config_id Embedded Signup OAuth token on /register).
+  // on it (typical when the System User was never assigned to the WABA, or
+  // the token was minted by a different business portfolio).
   if (code === 100 && /need either permission|owner business/i.test(metaMessage)) {
     return build(
       `Meta refused while ${STEP_LABEL[step]}: the access token has no permission on ` +

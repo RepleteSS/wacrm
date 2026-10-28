@@ -179,7 +179,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Default verify token fallback so operators and one-click users can verify without manual token generation
+    // Default verify token fallback so operators can verify the webhook
+    // without generating a token by hand first.
     const fallbackToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'replete_wacrm_verify_token'
     if (!matchedConfig && (verifyToken === fallbackToken || verifyToken === 'replete_wacrm_verify_token')) {
       if (configs.length > 0) {

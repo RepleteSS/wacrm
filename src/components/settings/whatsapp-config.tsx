@@ -13,7 +13,6 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
-  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -82,8 +81,6 @@ export function WhatsAppConfig() {
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  // Shared visibility toggle for both PIN inputs (One-Click card + Manual).
-  const [showPin, setShowPin] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
@@ -125,44 +122,6 @@ export function WhatsAppConfig() {
   // multi-number bug that prompted this work.
   const isRegistered = Boolean(config?.registered_at);
   const lastRegistrationError = config?.last_registration_error ?? null;
-
-  const [embeddedLoading, setEmbeddedLoading] = useState(false);
-
-  // Load Meta Facebook JS SDK asynchronously for Embedded Signup
-  useEffect(() => {
-    const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
-    if (!metaAppId) return;
-
-    if (typeof window !== 'undefined') {
-      const initFB = () => {
-        try {
-          (window as any).FB.init({
-            appId: metaAppId,
-            cookie: true,
-            xfbml: true,
-            version: 'v21.0',
-          });
-          console.log('[Meta SDK] Facebook SDK initialized with App ID:', metaAppId);
-        } catch (e) {
-          console.warn('[Meta SDK] init error:', e);
-        }
-      };
-
-      if ((window as any).FB) {
-        initFB();
-      } else {
-        (window as any).fbAsyncInit = initFB;
-        if (!document.getElementById('facebook-jssdk')) {
-          const js = document.createElement('script');
-          js.id = 'facebook-jssdk';
-          js.src = 'https://connect.facebook.net/en_US/sdk.js';
-          document.body.appendChild(js);
-        }
-      }
-    }
-  }, []);
-
-
 
   const [verifyingRegistration, setVerifyingRegistration] = useState(false);
   type RegistrationProbe = {
@@ -283,175 +242,6 @@ export function WhatsAppConfig() {
     loadedAccountIdRef.current = accountId;
     fetchConfig(accountId);
   }, [authLoading, profileLoading, user?.id, accountId, fetchConfig]);
-
-  const handleLaunchEmbeddedSignup = useCallback(async () => {
-    const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
-    const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID;
-
-    if (!metaAppId) {
-      toast.error('NEXT_PUBLIC_META_APP_ID is not configured in environment variables.');
-      return;
-    }
-
-    const FB = (window as any).FB;
-    if (!FB) {
-      toast.error('Meta Facebook SDK is still loading or blocked by an ad-blocker. Please refresh the page.');
-      return;
-    }
-
-    setEmbeddedLoading(true);
-
-    // Keep track of session info events emitted by the Meta popup (WABA ID and Phone Number ID)
-    let capturedSessionInfo: { waba_id?: string; phone_number_id?: string } = {};
-
-    const messageHandler = (event: MessageEvent) => {
-      if (
-        event.origin !== 'https://www.facebook.com' &&
-        event.origin !== 'https://web.facebook.com'
-      ) {
-        return;
-      }
-      try {
-        const data =
-          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.type === 'WA_EMBEDDED_SIGNUP') {
-          console.log('[WA_EMBEDDED_SIGNUP event]', data);
-          if (data.event === 'FINISH' && data.data) {
-            capturedSessionInfo = {
-              waba_id: data.data.waba_id,
-              phone_number_id: data.data.phone_number_id,
-            };
-          }
-        }
-      } catch {
-        // Non-JSON message, ignore
-      }
-    };
-    window.addEventListener('message', messageHandler);
-
-    const loginOptions: Record<string, unknown> = {
-      response_type: 'code',
-      override_default_response_type: true,
-    };
-
-    if (configId) {
-      loginOptions.config_id = configId;
-      loginOptions.extras = {
-        setup: {},
-        featureType: '',
-        sessionInfoVersion: '3',
-      };
-    } else {
-      loginOptions.scope = 'whatsapp_business_management,whatsapp_business_messaging';
-      loginOptions.return_scopes = true;
-    }
-
-    try {
-      // Meta Facebook JS SDK strictly forbids async functions as callbacks; use a synchronous function that spawns an async task
-      FB.login((response: any) => {
-        (async () => {
-          window.removeEventListener('message', messageHandler);
-          console.log('[Meta FB.login response]', response);
-
-          if (response.authResponse?.code) {
-            // Verify scopes only when Meta returns grantedScopes —
-            // the config_id flow (standard Embedded Signup) doesn't
-            // include it since scopes are pre-configured in the Meta app.
-            const grantedScopes = response.authResponse.grantedScopes
-            if (grantedScopes) {
-              const grantedList = grantedScopes.split(',')
-              const requiredScopes = ['whatsapp_business_management', 'whatsapp_business_messaging']
-              const missingScopes = requiredScopes.filter(s => !grantedList.includes(s))
-              if (missingScopes.length > 0) {
-                toast.error(
-                  `Missing required permissions: ${missingScopes.join(', ')}. ` +
-                  `Please re-authorize and allow all permissions in the Facebook popup.`
-                )
-                setEmbeddedLoading(false)
-                return
-              }
-            }
-
-            const code = response.authResponse.code;
-            toast.info('Meta authorization granted. Connecting WhatsApp...');
-
-            try {
-              const res = await fetch('/api/whatsapp/embedded-signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  code,
-                  waba_id: capturedSessionInfo.waba_id,
-                  phone_number_id: capturedSessionInfo.phone_number_id,
-                  // 2FA PIN from the One-Click card, if the user filled it in.
-                  // Lets the server run /register in this same call so the
-                  // whole connect finishes in one click.
-                  ...(pin.trim() ? { pin: pin.trim() } : {}),
-                }),
-              });
-
-              const data = await res.json();
-              if (!res.ok || data.error) {
-                toast.error(data.error || 'Failed to complete WhatsApp Embedded Signup');
-                return;
-              }
-
-              if (data.registered) {
-                // PIN supplied and /register succeeded — inbound messages live now.
-                toast.success(
-                  data.phone_info?.verified_name
-                    ? `Fully connected: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number}) — inbound messages enabled.`
-                    : 'WhatsApp fully connected — inbound messages enabled.',
-                );
-                setPin('');
-              } else if (data.registration_error) {
-                // Connected + saved, but /register rejected the PIN — keep the
-                // credentials, tell the user the exact reason.
-                toast.error(
-                  `Connected, but registration failed: ${data.registration_error}`,
-                  { duration: 12000 },
-                );
-                setPin('');
-              } else {
-                // No PIN supplied — credentials + webhook are in place,
-                // inbound registration still pending.
-                toast.success(
-                  data.phone_info?.verified_name
-                    ? `Connected: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number}). Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.`
-                    : 'WhatsApp connected! Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.',
-                  { duration: 12000 }
-                );
-              }
-
-              if (accountId) {
-                await fetchConfig(accountId);
-              }
-            } catch (err) {
-              console.error('Embedded signup exchange error:', err);
-              toast.error('Network error during WhatsApp account registration.');
-            } finally {
-              setEmbeddedLoading(false);
-            }
-          } else {
-            setEmbeddedLoading(false);
-            if (response?.status === 'not_authorized') {
-              toast.error('WhatsApp login was not authorized.');
-            } else {
-              toast.info('WhatsApp login popup was closed or cancelled.');
-            }
-          }
-        })().catch((err) => {
-          console.error('[Embedded signup uncaught]', err);
-          setEmbeddedLoading(false);
-        });
-      }, loginOptions);
-    } catch (e: any) {
-      window.removeEventListener('message', messageHandler);
-      setEmbeddedLoading(false);
-      console.error('[Meta FB.login exception]', e);
-      toast.error(e?.message || 'Failed to open Facebook login popup.');
-    }
-  }, [accountId, fetchConfig, pin]);
 
   async function handleToggleMirrorMedia(next: boolean) {
     if (!config || !accountId || savingMirror) return;
@@ -949,89 +739,10 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
-        {/* One-Click Meta WhatsApp Onboarding Card */}
-        <Card className="border-primary/30 bg-primary/[0.03] overflow-hidden">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-primary" />
-              <CardTitle className="text-foreground">One-Click WhatsApp Connect</CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground">
-              Directly connect your WhatsApp Business number using official Meta Embedded Signup. Meta will automatically configure your WABA, verify your number, and grant all required permissions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-card/60 border border-border">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">
-                  Connect with WhatsApp Business
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Opens official Facebook login popup to choose your phone number.
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={handleLaunchEmbeddedSignup}
-                disabled={embeddedLoading || !canEditSettings}
-                className="bg-[#25D366] hover:bg-[#20ba59] text-white font-medium shrink-0 shadow-sm"
-              >
-                {embeddedLoading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin mr-2" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="size-4 mr-2" />
-                    Connect with WhatsApp
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* 2FA PIN — collected up front so the single Connect click can
-                also run POST /register and finish inbound-message routing. */}
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                Two-Step Verification PIN
-                <span className="ml-1 text-muted-foreground">{t('optional')}</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t('pinPlaceholder')}
-                  value={pin}
-                  onChange={(e) =>
-                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                  disabled={embeddedLoading}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
-                >
-                  {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Add your 6-digit PIN (WhatsApp Manager → Phone numbers → Two-step
-                verification) to complete registration during the same click.
-                Leave blank to register later via Save Configuration.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* API Credentials */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">Manual API Credentials</CardTitle>
+            <CardTitle className="text-foreground">{t('apiCredentialsTitle')}</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t('apiCredentialsDesc')}
             </CardDescription>
@@ -1120,27 +831,17 @@ export function WhatsAppConfig() {
                 {t('twoStepPin')}
                 <span className="ml-1 text-muted-foreground">{t('optional')}</span>
               </Label>
-              <div className="relative">
-                <Input
-                  type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t('pinPlaceholder')}
-                  value={pin}
-                  onChange={(e) =>
-                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
-                >
-                  {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder={t('pinPlaceholder')}
+                value={pin}
+                onChange={(e) =>
+                  setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                }
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
+              />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <span dangerouslySetInnerHTML={{ __html: t('pinHint') }} />
               </p>
@@ -1148,7 +849,7 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
 
-        {/* Webhook Configuration */}
+        {/* Webhook URL */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">{t('webhookTitle')}</CardTitle>
@@ -1156,7 +857,7 @@ export function WhatsAppConfig() {
               {t('webhookDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="space-y-2">
               <Label className="text-muted-foreground">{t('webhookUrl')}</Label>
               <div className="flex gap-2">
@@ -1174,38 +875,6 @@ export function WhatsAppConfig() {
                   <Copy className="size-4" />
                 </Button>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Webhook Verify Token</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value="replete_wacrm_verify_token"
-                  className="bg-muted border-border text-muted-foreground font-mono text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    navigator.clipboard.writeText('replete_wacrm_verify_token');
-                    toast.success('Verify Token copied to clipboard');
-                  }}
-                  className="shrink-0 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                  <Copy className="size-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                In Meta Developer Dashboard (<strong>WhatsApp &gt; Configuration &gt; Webhook</strong>), click <strong>Edit</strong>, paste this Callback URL and Verify Token, then click <strong>Verify and save</strong>.
-              </p>
-            </div>
-
-            <div className="rounded-md border border-primary/20 bg-primary/[0.04] p-3 text-xs text-foreground space-y-1">
-              <p className="font-medium text-primary">🔔 Crucial Step for Incoming Messages:</p>
-              <p className="text-muted-foreground">
-                Under <strong>Webhook fields</strong> in your Meta App, click <strong>Manage</strong> and make sure <strong>messages</strong> is subscribed. Without this, Meta will not deliver customer messages to WACRM.
-              </p>
             </div>
           </CardContent>
         </Card>
