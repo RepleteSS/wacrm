@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
+  registerPhoneNumber,
   subscribeWabaToApp,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
@@ -62,13 +63,24 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { code, waba_id, phone_number_id } = body
+    const { code, waba_id, phone_number_id, pin } = body
 
     if (!code) {
       return NextResponse.json(
         { error: 'Authorization code is required from Meta Embedded Signup.' },
         { status: 400 }
       )
+    }
+
+    // Optional 2FA PIN, collected in the One-Click card so /register can
+    // run in this same call — no second trip through Save Configuration.
+    if (pin !== undefined && pin !== null && pin !== '') {
+      if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) {
+        return NextResponse.json(
+          { error: 'Two-step verification PIN must be exactly 6 digits.' },
+          { status: 400 }
+        )
+      }
     }
 
     const appId = process.env.NEXT_PUBLIC_META_APP_ID || process.env.META_APP_ID
@@ -296,20 +308,39 @@ export async function POST(request: Request) {
       ? existing.verify_token
       : encrypt('replete_wacrm_verify_token')
 
+    // Step 6: Register the phone number for inbound webhooks (POST /register).
+    // Skipped when no PIN was supplied — credentials are still saved and the
+    // response tells the UI to collect the PIN later via Save Configuration.
+    let registeredAt: string | null = null
+    let registrationError: string | null = null
+    if (pin) {
+      try {
+        await registerPhoneNumber({
+          phoneNumberId: resolvedPhoneNumberId,
+          accessToken,
+          pin,
+        })
+        registeredAt = new Date().toISOString()
+      } catch (err) {
+        // Save the credentials anyway (so the OAuth token isn't lost) and
+        // report the specific reason — mirrors the regular config save.
+        registrationError = err instanceof Error ? err.message : 'Failed to register the phone number.'
+        console.error('[embedded-signup] registerPhoneNumber failed:', registrationError)
+      }
+    }
+
     const baseRow = {
       phone_number_id: resolvedPhoneNumberId,
       waba_id: resolvedWabaId || null,
       access_token: encryptedAccessToken,
       verify_token: encryptedVerifyToken,
-      status: 'connected',
-      connected_at: new Date().toISOString(),
-      // Do NOT set registered_at here — /register was not called.
-      // The number must be registered via POST /{phone_number_id}/register
-      // with the 2FA PIN (done in the regular config save flow).
-      // Leaving this null shows "Not registered" banner with a path to complete it.
-      registered_at: null,
+      status: registrationError ? 'disconnected' : 'connected',
+      connected_at: registrationError ? null : new Date().toISOString(),
+      // Only set when /register actually ran AND succeeded — the UI reads
+      // this to decide inbound messages are live.
+      registered_at: registeredAt,
       subscribed_apps_at: subscribedAppsAt,
-      last_registration_error: null,
+      last_registration_error: registrationError,
       updated_at: new Date().toISOString(),
     }
 
@@ -346,12 +377,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      // Credentials saved and WABA subscribed, but /register (for inbound webhooks)
-      // was NOT called — requires 2FA PIN. The UI will show "Not registered"
-      // with a path to enter PIN and complete registration via Save Configuration.
       connected: true,
-      registered: false,
-      registration_skipped: true,
+      // registered=true only when /register ran with the supplied PIN —
+      // inbound messages are then live immediately.
+      registered: registeredAt != null,
+      // True when registration was skipped (no PIN supplied) rather than failed.
+      registration_skipped: !pin && !registrationError,
+      ...(registrationError ? { registration_error: registrationError } : {}),
       phone_info: phoneInfo,
       waba_id: resolvedWabaId,
       phone_number_id: resolvedPhoneNumberId,

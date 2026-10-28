@@ -82,6 +82,8 @@ export function WhatsAppConfig() {
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  // Shared visibility toggle for both PIN inputs (One-Click card + Manual).
+  const [showPin, setShowPin] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
@@ -381,6 +383,10 @@ export function WhatsAppConfig() {
                   code,
                   waba_id: capturedSessionInfo.waba_id,
                   phone_number_id: capturedSessionInfo.phone_number_id,
+                  // 2FA PIN from the One-Click card, if the user filled it in.
+                  // Lets the server run /register in this same call so the
+                  // whole connect finishes in one click.
+                  ...(pin.trim() ? { pin: pin.trim() } : {}),
                 }),
               });
 
@@ -390,18 +396,30 @@ export function WhatsAppConfig() {
                 return;
               }
 
-              if (data.registration_skipped) {
+              if (data.registered) {
+                // PIN supplied and /register succeeded — inbound messages live now.
+                toast.success(
+                  data.phone_info?.verified_name
+                    ? `Fully connected: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number}) — inbound messages enabled.`
+                    : 'WhatsApp fully connected — inbound messages enabled.',
+                );
+                setPin('');
+              } else if (data.registration_error) {
+                // Connected + saved, but /register rejected the PIN — keep the
+                // credentials, tell the user the exact reason.
+                toast.error(
+                  `Connected, but registration failed: ${data.registration_error}`,
+                  { duration: 12000 },
+                );
+                setPin('');
+              } else {
+                // No PIN supplied — credentials + webhook are in place,
+                // inbound registration still pending.
                 toast.success(
                   data.phone_info?.verified_name
                     ? `Connected: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number}). Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.`
                     : 'WhatsApp connected! Enter 2FA PIN in Settings → Save Configuration to enable inbound messages.',
                   { duration: 12000 }
-                );
-              } else {
-                toast.success(
-                  data.phone_info?.verified_name
-                    ? `Connected WhatsApp: ${data.phone_info.verified_name} (${data.phone_info.display_phone_number})`
-                    : 'WhatsApp Connected Successfully!'
                 );
               }
 
@@ -433,7 +451,7 @@ export function WhatsAppConfig() {
       console.error('[Meta FB.login exception]', e);
       toast.error(e?.message || 'Failed to open Facebook login popup.');
     }
-  }, [accountId, fetchConfig]);
+  }, [accountId, fetchConfig, pin]);
 
   async function handleToggleMirrorMedia(next: boolean) {
     if (!config || !accountId || savingMirror) return;
@@ -971,6 +989,42 @@ export function WhatsAppConfig() {
                 )}
               </Button>
             </div>
+
+            {/* 2FA PIN — collected up front so the single Connect click can
+                also run POST /register and finish inbound-message routing. */}
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">
+                Two-Step Verification PIN
+                <span className="ml-1 text-muted-foreground">{t('optional')}</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder={t('pinPlaceholder')}
+                  value={pin}
+                  onChange={(e) =>
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  disabled={embeddedLoading}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Add your 6-digit PIN (WhatsApp Manager → Phone numbers → Two-step
+                verification) to complete registration during the same click.
+                Leave blank to register later via Save Configuration.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -1066,17 +1120,27 @@ export function WhatsAppConfig() {
                 {t('twoStepPin')}
                 <span className="ml-1 text-muted-foreground">{t('optional')}</span>
               </Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder={t('pinPlaceholder')}
-                value={pin}
-                onChange={(e) =>
-                  setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                }
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
-              />
+              <div className="relative">
+                <Input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder={t('pinPlaceholder')}
+                  value={pin}
+                  onChange={(e) =>
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <span dangerouslySetInnerHTML={{ __html: t('pinHint') }} />
               </p>
