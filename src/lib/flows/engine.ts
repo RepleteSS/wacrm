@@ -54,6 +54,9 @@ import {
   handleHumanHandoffInCrm,
   isContactOptedOut,
   REPETE_CUSTOM_FIELDS,
+  WELCOME_TO_PRIMARY_NEED_MAP,
+  parseAttributionSource,
+  persistLeadSourceIfEmpty,
 } from "./qualification-engine";
 import {
   type CollectInputNodeConfig,
@@ -596,6 +599,7 @@ async function executeHandoff(
       accountId: run.account_id,
       conversationId: run.conversation_id,
       reason: cfg.note ?? "Flow handoff node reached",
+      vars: run.vars as any,
     });
   }
   await logEvent(db, run.id, "handoff", node.node_key, {
@@ -1095,6 +1099,15 @@ export async function dispatchInboundToFlows(
   const db = supabaseAdmin();
   let ownedRunId: string | null = null;
   try {
+    // Attribution extraction: pre-filled [src:source] in inbound text
+    if (input.message.kind === "text") {
+      const { cleanText, source } = parseAttributionSource(input.message.text);
+      if (source && input.contactId) {
+        await persistLeadSourceIfEmpty(db, input.contactId, source);
+      }
+      input.message.text = cleanText;
+    }
+
     const inboundText = input.message.kind === "text" ? input.message.text : "";
 
     // 1. WhatsApp Compliance: Opt-out handling on incoming message (STOP, UNSUBSCRIBE, CANCEL, etc.)
@@ -1151,6 +1164,7 @@ export async function dispatchInboundToFlows(
         accountId: input.accountId,
         conversationId: activeRun.conversation_id,
         reason: `Prospect requested human assistance: "${inboundText}"`,
+        vars: activeRun.vars as any,
       });
       await logEvent(db, activeRun.id, "handoff", activeRun.current_node_key, {
         reason: "user_requested_human",
@@ -1271,6 +1285,23 @@ async function handleReplyForActiveRun(
       const varKey = deriveVarKeyForNode(currentNode.node_key);
       if (varKey) {
         const newVars = { ...run.vars, [varKey]: message.reply_id };
+
+        // Welcome menu selection mapping: map wel_* to primary_need
+        if (currentNode.node_key === "welcome_prompt") {
+          const mappedNeed = WELCOME_TO_PRIMARY_NEED_MAP[message.reply_id];
+          if (mappedNeed) {
+            newVars.primary_need = mappedNeed;
+            if (run.contact_id) {
+              await persistAnswerToCrm(
+                db,
+                run.contact_id,
+                "ask_q1_primary_need",
+                mappedNeed,
+              );
+            }
+          }
+        }
+
         const { error: capErr } = await db
           .from("flow_runs")
           .update({

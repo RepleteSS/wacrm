@@ -1,0 +1,1332 @@
+{
+  "flow": {
+    "account_id": "6922ca1b-d675-46f9-9251-27c76cdc0f40",
+    "created_at": "2026-10-12 10:05:19.106826+00",
+    "description": "Conversational WhatsApp lead qualification and product positioning flow for Foundations, Execution System, and Option Strategies Mentorship Program.",
+    "entry_node_id": "start",
+    "execution_count": 13,
+    "fallback_policy": {
+      "max_reprompts": 2,
+      "on_exhaust": "handoff",
+      "on_timeout_hours": 24,
+      "on_unknown_reply": "reprompt"
+    },
+    "id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+    "last_executed_at": "2026-11-15 12:31:48.724379+00",
+    "name": "Replete Equities — WhatsApp Lead Qualification & Product Positioning V1",
+    "status": "active",
+    "trigger_config": {
+      "case_sensitive": false,
+      "keywords": [
+        "hi",
+        "hello",
+        "hey",
+        "start",
+        "replete",
+        "products",
+        "join",
+        "learn",
+        "trading"
+      ],
+      "match_type": "word",
+      "negative_keywords": [
+        "support",
+        "payment",
+        "refund",
+        "invoice",
+        "bill",
+        "billing",
+        "receipt",
+        "chargeback",
+        "cancel",
+        "desk",
+        "helpdesk"
+      ]
+    },
+    "trigger_type": "keyword",
+    "updated_at": "2026-11-15 12:31:48.724379+00",
+    "user_id": "93cca8b8-fbcc-4658-8e57-f222e50f6b9a"
+  },
+  "nodes": [
+    {
+      "config": {
+        "button_label": "Select Requirement",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Learn options trading from basics",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "pneed_basics",
+                "title": "Options Basics"
+              },
+              {
+                "description": "Improve existing trading process",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "pneed_process",
+                "title": "Improve Process"
+              },
+              {
+                "description": "Follow structured execution framework",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "pneed_execution",
+                "title": "Execution Framework"
+              },
+              {
+                "description": "Learn advanced strategies & hedging",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "pneed_advanced",
+                "title": "Advanced & Hedging"
+              },
+              {
+                "description": "Explore available programs first",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "pneed_explore",
+                "title": "Explore Programs"
+              }
+            ],
+            "title": "Your Primary Need"
+          }
+        ],
+        "text": "Question 1/8: Primary Requirement\n\nWhat are you primarily looking for right now?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "beaec3e9-cc1c-4cae-8de6-15c172a4c98c",
+      "node_key": "ask_q1_primary_need",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Experience",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Not started yet",
+                "next_node_key": "ask_q3_options_knowledge",
+                "reply_id": "exp_beginner",
+                "title": "Beginner"
+              },
+              {
+                "description": "Started trading recently",
+                "next_node_key": "ask_q3_options_knowledge",
+                "reply_id": "exp_lt_1yr",
+                "title": "Less than 1 year"
+              },
+              {
+                "description": "Moderate market exposure",
+                "next_node_key": "ask_q3_options_knowledge",
+                "reply_id": "exp_1_3yr",
+                "title": "1–3 years"
+              },
+              {
+                "description": "Active market participant",
+                "next_node_key": "ask_q3_options_knowledge",
+                "reply_id": "exp_3_5yr",
+                "title": "3–5 years"
+              },
+              {
+                "description": "Veteran / seasoned trader",
+                "next_node_key": "ask_q3_options_knowledge",
+                "reply_id": "exp_gt_5yr",
+                "title": "More than 5 years"
+              }
+            ],
+            "title": "Experience Level"
+          }
+        ],
+        "text": "Question 2/8: Trading Experience\n\nHow long have you been trading the stock market or derivatives?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "aaf6aaaa-cae6-4375-80a0-ffc31713b347",
+      "node_key": "ask_q2_trading_experience",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Knowledge",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "New to options concepts & Greeks",
+                "next_node_key": "ask_q4_trading_capital_band",
+                "reply_id": "know_beginner",
+                "title": "Complete beginner"
+              },
+              {
+                "description": "Know calls/puts & simple terms",
+                "next_node_key": "ask_q4_trading_capital_band",
+                "reply_id": "know_basics",
+                "title": "Understand basics"
+              },
+              {
+                "description": "Have executed option trades on my own",
+                "next_node_key": "ask_q4_trading_capital_band",
+                "reply_id": "know_independent",
+                "title": "Traded independently"
+              },
+              {
+                "description": "Familiar with Greeks & adjustments",
+                "next_node_key": "ask_q4_trading_capital_band",
+                "reply_id": "know_experienced",
+                "title": "Experienced in Hedging"
+              }
+            ],
+            "title": "Knowledge Level"
+          }
+        ],
+        "text": "Question 3/8: Options Knowledge\n\nHow comfortable are you with options, strike selection, Greeks, and risk management?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "076e68f6-0e9e-4b32-a1e8-6f1034578c76",
+      "node_key": "ask_q3_options_knowledge",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Capital Band",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Starting small",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_below_50k",
+                "title": "Below ₹50,000"
+              },
+              {
+                "description": "Foundational allocation",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_50k_1l",
+                "title": "₹50,000–₹1 lakh"
+              },
+              {
+                "description": "Moderate trading capital",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_1_3l",
+                "title": "₹1–3 lakh"
+              },
+              {
+                "description": "Mid-tier basket deployment",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_3_5l",
+                "title": "₹3–5 lakh"
+              },
+              {
+                "description": "Substantial capital base",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_5_10l",
+                "title": "₹5–10 lakh"
+              },
+              {
+                "description": "High capital allocation",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_above_10l",
+                "title": "Above ₹10 lakh"
+              },
+              {
+                "description": "Keep confidential",
+                "next_node_key": "ask_q5_primary_challenge",
+                "reply_id": "cap_undisclosed",
+                "title": "Prefer not to say"
+              }
+            ],
+            "title": "Trading Capital Band"
+          }
+        ],
+        "text": "Question 4/8: Available Capital\n\nWhat approximate capital have you allocated, or are you planning to allocate, specifically for trading?\n\n*(Note: This refers strictly to dedicated trading capital, not income or net worth. Capital alone does not determine product suitability.)*"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "ad12a613-4378-4a2f-8741-ce8d9e6db4b2",
+      "node_key": "ask_q4_trading_capital_band",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Challenge",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Understanding core fundamentals",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_fundamentals",
+                "title": "Fundamentals"
+              },
+              {
+                "description": "Choosing & managing strategies",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_strategies",
+                "title": "Managing Strategies"
+              },
+              {
+                "description": "Consistency & following trading rules",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_consistency",
+                "title": "Rules & Consistency"
+              },
+              {
+                "description": "Discipline and risk management",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_discipline",
+                "title": "Execution Discipline"
+              },
+              {
+                "description": "Managing complex hedges & spreads",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_hedges",
+                "title": "Complex Hedges"
+              },
+              {
+                "description": "Little time to monitor live trades",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_time",
+                "title": "Lack of Time"
+              },
+              {
+                "description": "Still identifying what is missing",
+                "next_node_key": "ask_q6_time_availability",
+                "reply_id": "chal_unsure",
+                "title": "Not Sure Yet"
+              }
+            ],
+            "title": "Core Challenge"
+          }
+        ],
+        "text": "Question 5/8: Main Challenge\n\nWhat is your biggest challenge at the moment?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "a926a911-f378-44b2-a90a-916b9beb0b4f",
+      "node_key": "ask_q5_primary_challenge",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Availability",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Very limited active screen time",
+                "next_node_key": "ask_q7_support_preference",
+                "reply_id": "time_lt_30m",
+                "title": "< 30 mins a day"
+              },
+              {
+                "description": "Moderate daily monitoring",
+                "next_node_key": "ask_q7_support_preference",
+                "reply_id": "time_30_60m",
+                "title": "30–60 mins a day"
+              },
+              {
+                "description": "Regular active participation",
+                "next_node_key": "ask_q7_support_preference",
+                "reply_id": "time_1_2h",
+                "title": "1–2 hours a day"
+              },
+              {
+                "description": "High screen time / active trader",
+                "next_node_key": "ask_q7_support_preference",
+                "reply_id": "time_gt_2h",
+                "title": "> 2 hours a day"
+              },
+              {
+                "description": "Prefer a structured learning schedule",
+                "next_node_key": "ask_q7_support_preference",
+                "reply_id": "time_structured",
+                "title": "Structured Schedule"
+              }
+            ],
+            "title": "Daily Time Commitment"
+          }
+        ],
+        "text": "Question 6/8: Time Availability\n\nHow much time can you realistically devote to trading and monitoring positions?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "04f169ce-7373-4413-98aa-85ac381992fd",
+      "node_key": "ask_q6_time_availability",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Support Type",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Structured learning from the basics",
+                "next_node_key": "branch_foundations_q8",
+                "reply_id": "supp_basics",
+                "title": "Structured Basics"
+              },
+              {
+                "description": "A defined, rules-based framework",
+                "next_node_key": "branch_execution_q8",
+                "reply_id": "supp_execution",
+                "title": "Execution Framework"
+              },
+              {
+                "description": "Personalised strategy guidance",
+                "next_node_key": "branch_mentorship_q8",
+                "reply_id": "supp_mentorship",
+                "title": "Advanced Mentorship"
+              },
+              {
+                "description": "I'd like to understand differences first",
+                "next_node_key": "branch_unsure_q8",
+                "reply_id": "supp_unsure",
+                "title": "Understand Differences"
+              }
+            ],
+            "title": "Preferred Support"
+          }
+        ],
+        "text": "Question 7/8: Learning Preference\n\nWhich kind of support would be most useful to you?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "9c56110a-2f39-41da-ad77-77a25ca31f56",
+      "node_key": "ask_q7_support_preference",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Readiness",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "High intent to begin immediately",
+                "next_node_key": "tag_execution_high_intent",
+                "reply_id": "ready_now_exe",
+                "title": "Ready to explore now"
+              },
+              {
+                "description": "Planning to start this week",
+                "next_node_key": "tag_execution_qualified",
+                "reply_id": "ready_7d_exe",
+                "title": "Within next 7 days"
+              },
+              {
+                "description": "Planning for next month",
+                "next_node_key": "tag_execution_qualified",
+                "reply_id": "ready_30d_exe",
+                "title": "Within next 30 days"
+              },
+              {
+                "description": "Gathering information for now",
+                "next_node_key": "tag_execution_researching",
+                "reply_id": "ready_research_exe",
+                "title": "Just researching"
+              }
+            ],
+            "title": "Your Timeline"
+          }
+        ],
+        "text": "Question 8/8: Readiness\n\nWhen would you ideally like to deploy a structured execution system?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "c73c6e48-2a85-4b1f-a8c4-cc1e81b3f761",
+      "node_key": "branch_execution_q8",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Readiness",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "High intent to begin immediately",
+                "next_node_key": "tag_foundations_high_intent",
+                "reply_id": "ready_now_fnd",
+                "title": "Ready to explore now"
+              },
+              {
+                "description": "Planning to start this week",
+                "next_node_key": "tag_foundations_qualified",
+                "reply_id": "ready_7d_fnd",
+                "title": "Within next 7 days"
+              },
+              {
+                "description": "Planning for next month",
+                "next_node_key": "tag_foundations_qualified",
+                "reply_id": "ready_30d_fnd",
+                "title": "Within next 30 days"
+              },
+              {
+                "description": "Gathering information for now",
+                "next_node_key": "tag_foundations_researching",
+                "reply_id": "ready_research_fnd",
+                "title": "Just researching"
+              }
+            ],
+            "title": "Your Timeline"
+          }
+        ],
+        "text": "Question 8/8: Readiness\n\nWhen would you ideally like to get started with your options foundation journey?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "83477ebd-1e6f-402f-98ce-057f433b6892",
+      "node_key": "branch_foundations_q8",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Readiness",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "High intent to begin immediately",
+                "next_node_key": "tag_mentorship_high_intent",
+                "reply_id": "ready_now_mnt",
+                "title": "Ready to explore now"
+              },
+              {
+                "description": "Planning to start this week",
+                "next_node_key": "tag_mentorship_qualified",
+                "reply_id": "ready_7d_mnt",
+                "title": "Within next 7 days"
+              },
+              {
+                "description": "Planning for next month",
+                "next_node_key": "tag_mentorship_qualified",
+                "reply_id": "ready_30d_mnt",
+                "title": "Within next 30 days"
+              },
+              {
+                "description": "Gathering information for now",
+                "next_node_key": "tag_mentorship_researching",
+                "reply_id": "ready_research_mnt",
+                "title": "Just researching"
+              }
+            ],
+            "title": "Your Timeline"
+          }
+        ],
+        "text": "Question 8/8: Readiness\n\nWhen would you ideally like to enroll in the Option Strategies Mentorship Program?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "0954a095-8558-44eb-992b-c822c28cb7d9",
+      "node_key": "branch_mentorship_q8",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "button_label": "Select Timeline",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Connect with our team today",
+                "next_node_key": "tag_review_high_intent",
+                "reply_id": "ready_now_rev",
+                "title": "Ready to talk now"
+              },
+              {
+                "description": "Schedule a discussion this week",
+                "next_node_key": "tag_review_qualified",
+                "reply_id": "ready_7d_rev",
+                "title": "Within next 7 days"
+              },
+              {
+                "description": "Take time to review materials",
+                "next_node_key": "tag_review_researching",
+                "reply_id": "ready_research_rev",
+                "title": "Just researching"
+              }
+            ],
+            "title": "Consultation Timeline"
+          }
+        ],
+        "text": "Question 8/8: Readiness\n\nWhen would you like to speak with our advisory team to clarify the differences?"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "630dd830-9a0e-42fc-8916-8c2e8b7aee74",
+      "node_key": "branch_unsure_q8",
+      "node_type": "send_list"
+    },
+    {
+      "config": {
+        "false_next": "tag_new_lead",
+        "operator": "present",
+        "subject": "tag",
+        "subject_key": "acd6be77-b9dc-47bd-a025-aaf8bb065631",
+        "true_next": "flow_suppressed_opt_out"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "2a2ef151-3efe-4e8d-bfb2-91a1208a8e9f",
+      "node_key": "check_opt_out",
+      "node_type": "condition"
+    },
+    {
+      "config": {
+        "next_node_key": "end_qualification_complete",
+        "text": "No problem at all! Take your time to review our resources. Whenever you are ready to explore further, just send us a message here on WhatsApp.\n\nWishing you disciplined and successful trading!"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "b87d9d0c-a8c2-4fb0-80c0-e9b3fd694165",
+      "node_key": "decide_later_message",
+      "node_type": "send_message"
+    },
+    {
+      "config": {},
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "ce8a8bc5-0dec-4447-8429-e173e6031eef",
+      "node_key": "end_qualification_complete",
+      "node_type": "end"
+    },
+    {
+      "config": {
+        "next_node_key": "end_qualification_complete",
+        "text": "⚡ **Execution System — Intraday Option Selling Basket**\n\nPricing:\n• 3 Months: ₹9,999\n• 6 Months: ₹19,999\n• 12 Months: ₹29,999\n\nKey Highlights:\n• Systematic, rules-based intraday option selling architecture\n• Defined risk, entry/exit criteria, and position management\n• Designed for traders with capital discipline and basic Greeks knowledge\n\nOur team is available to review your setup and broker connectivity."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "fecfa723-5b52-4deb-a902-dbba5e1add59",
+      "node_key": "exe_details_message",
+      "node_type": "send_message"
+    },
+    {
+      "config": {
+        "note": "Prospect requested consultation / needs human review from WhatsApp Lead Qualification Flow."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "a1b30b82-1a1e-4820-9698-c27a2ac50a84",
+      "node_key": "execute_handoff_node",
+      "node_type": "handoff"
+    },
+    {
+      "config": {
+        "button_label": "View All Programs",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "₹14,999 | Learn option basics",
+                "next_node_key": "recommendation_foundations",
+                "reply_id": "explore_fnd",
+                "title": "Foundations"
+              },
+              {
+                "description": "From ₹9,999 | Rules-based basket",
+                "next_node_key": "recommendation_execution",
+                "reply_id": "explore_exe",
+                "title": "Execution System"
+              },
+              {
+                "description": "₹79,999 | Advanced strategies",
+                "next_node_key": "recommendation_mentorship",
+                "reply_id": "explore_mnt",
+                "title": "Mentorship Program"
+              },
+              {
+                "description": "Personal consultation",
+                "next_node_key": "route_human_handoff",
+                "reply_id": "explore_talk",
+                "title": "Speak with Advisor"
+              }
+            ],
+            "title": "All Solutions"
+          }
+        ],
+        "text": "Here is an overview of all our solutions. Select any to learn more or speak with an advisor:"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "7a2a2b59-d091-41c3-80d3-bc6bbc9a8945",
+      "node_key": "explore_other_options",
+      "node_type": "send_list"
+    },
+    {
+      "config": {},
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "9f8d7a25-6f96-45e3-9f43-5d8dcf31b94f",
+      "node_key": "flow_suppressed_opt_out",
+      "node_type": "end"
+    },
+    {
+      "config": {
+        "next_node_key": "end_qualification_complete",
+        "text": "📘 **Replete Equities — Foundations (₹14,999)**\n\nKey Highlights:\n• Complete options trading basics from scratch\n• Option Greeks, moneyness, and strike selection\n• Practical risk management and capital preservation\n• Live practical sessions and structured learning roadmap\n\nOur team is available to assist if you have any questions before enrolling."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "dc094cfb-3fc6-4a05-bc49-57d63c011aa1",
+      "node_key": "fnd_details_message",
+      "node_type": "send_message"
+    },
+    {
+      "config": {
+        "next_node_key": "end_qualification_complete",
+        "text": "🎓 **Option Strategies Mentorship Program (₹79,999)**\n\nKey Highlights:\n• Advanced option strategy design & portfolio Greeks\n• Live market adjustments, hedging, and volatility management\n• Direct mentorship & personalised review of your trading journal\n• Comprehensive strategy playbook for diverse market regimes\n\nOur team can schedule an evaluation call to ensure this program aligns with your goals."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "892051c4-9a97-4576-bac2-e9cdf1dd4e8f",
+      "node_key": "mnt_details_message",
+      "node_type": "send_message"
+    },
+    {
+      "config": {
+        "buttons": [
+          {
+            "next_node_key": "exe_details_message",
+            "reply_id": "exe_details",
+            "title": "System Details"
+          },
+          {
+            "next_node_key": "route_human_handoff",
+            "reply_id": "exe_speak_team",
+            "title": "Speak to Team"
+          },
+          {
+            "next_node_key": "explore_other_options",
+            "reply_id": "exe_explore_more",
+            "title": "Explore More"
+          }
+        ],
+        "text": "Thanks for sharing your background!\n\n**Our suggested next step: Execution System — Intraday Option Selling Basket**\n\nWhy this may fit:\nYou understand options fundamentals and want a disciplined, rules-based intraday framework to eliminate emotional errors and manage risk systematically.\n\nPricing Options:\n• 3 Months: ₹9,999\n• 6 Months: ₹19,999\n• 12 Months: ₹29,999\n\n*Note: Execution tools provide systematic discipline but do not eliminate market risk or guarantee trading profits. Please review risk disclosures prior to deployment.*\n\nWould you like to:"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "bcb4697c-0888-489a-a576-deff9c738ed4",
+      "node_key": "recommendation_execution",
+      "node_type": "send_buttons"
+    },
+    {
+      "config": {
+        "buttons": [
+          {
+            "next_node_key": "fnd_details_message",
+            "reply_id": "fnd_details",
+            "title": "Program Details"
+          },
+          {
+            "next_node_key": "route_human_handoff",
+            "reply_id": "fnd_speak_team",
+            "title": "Speak to Team"
+          },
+          {
+            "next_node_key": "explore_other_options",
+            "reply_id": "fnd_explore_more",
+            "title": "Explore More"
+          }
+        ],
+        "text": "Thanks for sharing your background!\n\n**Our suggested next step: Foundations**\n\nWhy this may fit:\nYou are looking to build a structured, solid grounding in options trading, strike selection, Greeks, and essential risk management before scaling up.\n\nInvestment: ₹14,999\n\n*Note: This recommendation is based on your stated learning needs. It is not a promise of trading profits or a guarantee of suitability for every financial situation.*\n\nWould you like to:"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "4ea67e34-7617-49cb-919c-ac196c1a983f",
+      "node_key": "recommendation_foundations",
+      "node_type": "send_buttons"
+    },
+    {
+      "config": {
+        "buttons": [
+          {
+            "next_node_key": "mnt_details_message",
+            "reply_id": "mnt_details",
+            "title": "Mentorship Scope"
+          },
+          {
+            "next_node_key": "route_human_handoff",
+            "reply_id": "mnt_speak_team",
+            "title": "Speak to Team"
+          },
+          {
+            "next_node_key": "explore_other_options",
+            "reply_id": "mnt_explore_more",
+            "title": "Explore More"
+          }
+        ],
+        "text": "Thanks for sharing your background!\n\n**Our suggested next step: Option Strategies Mentorship Program**\n\nWhy this may fit:\nYou have active market experience and seek in-depth mastery in advanced non-directional strategies, dynamic adjustments, portfolio hedging, and risk architecture.\n\nInvestment: ₹79,999\n\n*Note: This program focuses on advanced decision-making and risk modelling. It requires dedication and screen time commitment. Past performance does not guarantee future results.*\n\nWould you like to:"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "82b26dd7-8e4f-42ee-9307-e3d42919584e",
+      "node_key": "recommendation_mentorship",
+      "node_type": "send_buttons"
+    },
+    {
+      "config": {
+        "buttons": [
+          {
+            "next_node_key": "route_human_handoff",
+            "reply_id": "unsure_talk_team",
+            "title": "Connect with Team"
+          },
+          {
+            "next_node_key": "decide_later_message",
+            "reply_id": "unsure_decide_later",
+            "title": "Decide Later"
+          }
+        ],
+        "text": "Thanks for taking the time to share your preferences!\n\nBecause your goals involve exploring the best fit across education and execution frameworks, we want to ensure you get personalized clarity rather than a generalized recommendation.\n\nWe would be happy to have our Replete Equities advisory desk connect with you for a brief walkthrough."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "50b0c906-de9c-46ac-843c-80beef6f1713",
+      "node_key": "recommendation_unsure_review",
+      "node_type": "send_buttons"
+    },
+    {
+      "config": {
+        "next_node_key": "tag_handoff_review",
+        "text": "Thank you! I have notified our team at Replete Equities. An advisor will review your preferences and get in touch with you shortly on this WhatsApp chat.\n\nOur team is available Monday to Friday during market and business hours."
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "058d922c-eaee-49fb-8e7c-e84b8f14f0f4",
+      "node_key": "route_human_handoff",
+      "node_type": "send_message"
+    },
+    {
+      "config": {
+        "next_node_key": "check_opt_out"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "828d5353-8256-4a64-84e1-0ac9188e7bbd",
+      "node_key": "start",
+      "node_type": "start"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_execution_product",
+        "tag_id": "016be27c-f69e-4e3b-b954-6fdaf6615796"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "2525a521-2f42-4f2b-a99d-d06f7d269184",
+      "node_key": "tag_execution_high_intent",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "recommendation_execution",
+        "tag_id": "d4b2b1db-5f30-4eed-a647-bee826c9b9ee"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "d39f9e83-92f4-45ff-a8d8-72c898ed2feb",
+      "node_key": "tag_execution_product",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_execution_product",
+        "tag_id": "631d502e-3654-4a57-b9da-4d0767949ae4"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "17c5945b-bbbf-4276-9c43-1200b40a8493",
+      "node_key": "tag_execution_qualified",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_execution_product",
+        "tag_id": "436f2cb3-5c32-4ee2-b430-36b473b877ca"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "4ac5b418-65c6-4cd7-bdb0-9584e538134a",
+      "node_key": "tag_execution_researching",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_foundations_product",
+        "tag_id": "016be27c-f69e-4e3b-b954-6fdaf6615796"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "eb3ccdcd-0653-460f-924d-aad4fa2d5a87",
+      "node_key": "tag_foundations_high_intent",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "recommendation_foundations",
+        "tag_id": "79c3623f-6b7f-45c3-8c52-45328e75e2d1"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "d69575b9-053d-4404-9735-267a87670df8",
+      "node_key": "tag_foundations_product",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_foundations_product",
+        "tag_id": "631d502e-3654-4a57-b9da-4d0767949ae4"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "08f4d52e-986c-4a34-a38a-caeecbe4bd27",
+      "node_key": "tag_foundations_qualified",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_foundations_product",
+        "tag_id": "436f2cb3-5c32-4ee2-b430-36b473b877ca"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "036f0004-eff9-4e2e-92ab-35d268acf635",
+      "node_key": "tag_foundations_researching",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "execute_handoff_node",
+        "tag_id": "6d4c5c7c-6d6c-44b2-b983-e99abf735384"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "affc47dc-3556-4876-874a-0bb112b64f71",
+      "node_key": "tag_handoff_review",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "recommendation_unsure_review",
+        "tag_id": "6d4c5c7c-6d6c-44b2-b983-e99abf735384"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "05b24160-9a30-471c-9336-9b3a4ac3dbc1",
+      "node_key": "tag_human_review_required",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_mentorship_product",
+        "tag_id": "016be27c-f69e-4e3b-b954-6fdaf6615796"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "ba7d3dc7-8ac3-4f8b-afd4-99ed889289e8",
+      "node_key": "tag_mentorship_high_intent",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "recommendation_mentorship",
+        "tag_id": "1e4d289d-3932-47f3-92d1-dc830d6ec553"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "ac4bed6f-ef4b-43a6-a8a4-b7b86c7ecc33",
+      "node_key": "tag_mentorship_product",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_mentorship_product",
+        "tag_id": "631d502e-3654-4a57-b9da-4d0767949ae4"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "d196d725-492a-441b-adaf-b8748393b5bb",
+      "node_key": "tag_mentorship_qualified",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_mentorship_product",
+        "tag_id": "436f2cb3-5c32-4ee2-b430-36b473b877ca"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "f1a634cb-7ea2-4579-83f7-f78058abca47",
+      "node_key": "tag_mentorship_researching",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "welcome_prompt",
+        "tag_id": "1b8b87b2-8892-4c35-8305-917733883aa1"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "26f0e65e-56eb-4f7e-8a69-3d6215e8fad8",
+      "node_key": "tag_new_lead",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_human_review_required",
+        "tag_id": "016be27c-f69e-4e3b-b954-6fdaf6615796"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "43f919b8-9a41-43b5-9724-5eab3c6c5025",
+      "node_key": "tag_review_high_intent",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_human_review_required",
+        "tag_id": "631d502e-3654-4a57-b9da-4d0767949ae4"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "ad37d9d0-49ac-460a-af4f-d0b8143da5f2",
+      "node_key": "tag_review_qualified",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "mode": "add",
+        "next_node_key": "tag_human_review_required",
+        "tag_id": "436f2cb3-5c32-4ee2-b430-36b473b877ca"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "7adbdb5f-91df-4a96-a03c-b4c657eaddbc",
+      "node_key": "tag_review_researching",
+      "node_type": "set_tag"
+    },
+    {
+      "config": {
+        "button_label": "Choose Starting Path",
+        "sections": [
+          {
+            "rows": [
+              {
+                "description": "Learn trading & options basics",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "wel_fundamentals",
+                "title": "Learn Fundamentals"
+              },
+              {
+                "description": "Rules-based execution system",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "wel_execution",
+                "title": "Structured Execution"
+              },
+              {
+                "description": "Option strategies & hedging",
+                "next_node_key": "ask_q2_trading_experience",
+                "reply_id": "wel_mentorship",
+                "title": "Advanced Mentorship"
+              },
+              {
+                "description": "Connect with our advisory desk",
+                "next_node_key": "route_human_handoff",
+                "reply_id": "wel_team",
+                "title": "Speak to the Team"
+              }
+            ],
+            "title": "Starting Options"
+          }
+        ],
+        "text": "Hi {{vars.first_name}}! Welcome to Replete Equities.\n\nI'm here to help you identify which of our trading education and execution solutions best fits your current experience, requirements, and available capital.\n\nI'll ask a few quick questions so we can guide you towards the right option. There is no obligation to purchase.\n\nLet's start!"
+      },
+      "created_at": "2026-10-18 20:52:02.252322+00",
+      "flow_id": "b23a968f-6fbb-4d57-b016-538d58a5f8e6",
+      "id": "fa34314c-d744-418a-8d91-06d4302065ad",
+      "node_key": "welcome_prompt",
+      "node_type": "send_list"
+    }
+  ],
+  "fields": [
+    {
+      "field_name": "assigned_team_member",
+      "field_options": null,
+      "field_type": "text",
+      "id": "975ad023-1a75-429e-9900-11bb9da1a5cf"
+    },
+    {
+      "field_name": "consent_status",
+      "field_options": null,
+      "field_type": "text",
+      "id": "4afcbe44-3e22-4958-a20f-faf698c94661"
+    },
+    {
+      "field_name": "consent_timestamp",
+      "field_options": null,
+      "field_type": "text",
+      "id": "e49540da-dd5a-44e6-b55b-1eac4e31f464"
+    },
+    {
+      "field_name": "conversation_notes",
+      "field_options": null,
+      "field_type": "text",
+      "id": "172eda3d-2233-438f-91a3-4ce845bc321d"
+    },
+    {
+      "field_name": "current_stage",
+      "field_options": null,
+      "field_type": "text",
+      "id": "7dbc68a0-b1c0-4bf4-8790-509f095dead1"
+    },
+    {
+      "field_name": "last_contact_date",
+      "field_options": null,
+      "field_type": "text",
+      "id": "e15a4af5-5b26-4aa2-8237-5e5099eb4907"
+    },
+    {
+      "field_name": "lead_score",
+      "field_options": null,
+      "field_type": "number",
+      "id": "784dc768-0214-44fb-bdb7-2b4961d42554"
+    },
+    {
+      "field_name": "lead_source",
+      "field_options": null,
+      "field_type": "text",
+      "id": "e955dd8c-3ae0-4ea6-8a2c-91349a2c8d00"
+    },
+    {
+      "field_name": "next_follow_up_date",
+      "field_options": null,
+      "field_type": "text",
+      "id": "a62b410a-ad7f-45a3-a0ab-176d01a766f2"
+    },
+    {
+      "field_name": "opt_out_status",
+      "field_options": null,
+      "field_type": "text",
+      "id": "5584ac46-a7f3-4ce2-a781-ca88b89750ab"
+    },
+    {
+      "field_name": "options_knowledge",
+      "field_options": null,
+      "field_type": "text",
+      "id": "0c4e2951-0b32-43d5-94f2-0f07987a4e75"
+    },
+    {
+      "field_name": "primary_challenge",
+      "field_options": null,
+      "field_type": "text",
+      "id": "6a939a5d-16b0-4d5a-8d69-f672ab52d63c"
+    },
+    {
+      "field_name": "primary_need",
+      "field_options": null,
+      "field_type": "text",
+      "id": "c69972e3-92fb-45ec-ba63-97c267158383"
+    },
+    {
+      "field_name": "purchase_readiness",
+      "field_options": null,
+      "field_type": "text",
+      "id": "d151f44d-0714-4c92-8f84-dc585a489ef8"
+    },
+    {
+      "field_name": "recommendation_rationale",
+      "field_options": null,
+      "field_type": "text",
+      "id": "b9024148-ddf1-430a-a8e3-294869c88dc3"
+    },
+    {
+      "field_name": "recommended_product",
+      "field_options": null,
+      "field_type": "text",
+      "id": "5fcdcb7c-1328-489e-91fb-e2b0ddaa5821"
+    },
+    {
+      "field_name": "support_preference",
+      "field_options": null,
+      "field_type": "text",
+      "id": "d808560d-ebf4-463c-8c05-47009c432bff"
+    },
+    {
+      "field_name": "time_availability",
+      "field_options": null,
+      "field_type": "text",
+      "id": "1f94d1eb-e92c-435a-83fe-5f55f9504f12"
+    },
+    {
+      "field_name": "trading_capital_band",
+      "field_options": null,
+      "field_type": "text",
+      "id": "72723562-7e9a-42ab-81c8-b1f32f2fdee2"
+    },
+    {
+      "field_name": "trading_experience",
+      "field_options": null,
+      "field_type": "text",
+      "id": "9c2a6b08-2dcd-4f36-9dbf-113bb32f9a8b"
+    }
+  ],
+  "tags": [
+    {
+      "color": "#3b82f6",
+      "id": "69cf6778-7d10-4b09-b842-5d975d44fc88",
+      "name": "Awaiting Reply"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "3405ec68-f73d-4a21-b42b-938b492dab0b",
+      "name": "Cold Lead"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "ac32f424-f5db-4138-aadb-b2b8e024a886",
+      "name": "Contacted"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "d4b2b1db-5f30-4eed-a647-bee826c9b9ee",
+      "name": "Execution"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "79c3623f-6b7f-45c3-8c52-45328e75e2d1",
+      "name": "Foundation"
+    },
+    {
+      "color": "#10b981",
+      "id": "016be27c-f69e-4e3b-b954-6fdaf6615796",
+      "name": "HIGH_INTENT"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "bd6100a0-c32a-46a8-9405-b02edc4e53c6",
+      "name": "Hot"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "7ed8c37b-c015-4189-ab1a-89ce6d23d73a",
+      "name": "Interested"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "19431bad-2b36-42ef-a72a-63ff5e1b0b2e",
+      "name": "Lost"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "1e4d289d-3932-47f3-92d1-dc830d6ec553",
+      "name": "Mentorship"
+    },
+    {
+      "color": "#ef4444",
+      "id": "6d4c5c7c-6d6c-44b2-b983-e99abf735384",
+      "name": "NEEDS_HUMAN_REVIEW"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "70b50027-df6b-4b9b-9945-67a5da27e1d1",
+      "name": "New"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "1b8b87b2-8892-4c35-8305-917733883aa1",
+      "name": "New Lead"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "66300337-37ec-48d4-8375-78c24d88f0b7",
+      "name": "Not a Lead"
+    },
+    {
+      "color": "#dc2626",
+      "id": "acd6be77-b9dc-47bd-a025-aaf8bb065631",
+      "name": "OPT_OUT"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "f5f1ba33-0624-48b0-9c49-e325e754cac1",
+      "name": "Proposal Shared"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "631d502e-3654-4a57-b9da-4d0767949ae4",
+      "name": "Qualified"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "7492dd37-e8de-44e8-8718-85baa46eb0dc",
+      "name": "Reactivation Due"
+    },
+    {
+      "color": "#6b7280",
+      "id": "436f2cb3-5c32-4ee2-b430-36b473b877ca",
+      "name": "RESEARCHING"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "3b54d3a1-75ce-41fb-994b-d0617003629d",
+      "name": "Score 1"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "33455c1b-2c41-4899-a968-16731db57812",
+      "name": "Score 2"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "a6181869-4867-40eb-aa4b-a13f7295d36c",
+      "name": "Score 3"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "704e1982-7f2a-4d83-bceb-4bb34fde68e2",
+      "name": "Score 4"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "0011a1c7-4dea-4df8-ad8a-d52f8cf564c3",
+      "name": "Score 5"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "9a3cc6b3-3990-4b90-b568-f2801242ab01",
+      "name": "Score 6"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "6ae61eb6-e038-4ebe-9ecb-8508b5dbaa72",
+      "name": "WhatsApp"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "a885b1d9-37fa-4de6-a287-abbc0926eb87",
+      "name": "Won"
+    }
+  ],
+  "stages": [],
+  "automations": [],
+  "exported_at": "2026-11-15T17:19:09.776Z"
+}

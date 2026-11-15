@@ -21,6 +21,7 @@ import {
 import { readCappedBody } from '@/lib/whatsapp/webhook-body'
 import { resumeAwaitingReply, runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
+import { extractReferralSource, persistLeadSourceIfEmpty } from '@/lib/flows/qualification-engine'
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply'
 import { dispatchWebhookEvent } from '@/lib/webhooks/deliver'
 import {
@@ -98,6 +99,14 @@ interface WhatsAppMessage {
   button?: { text?: string; payload?: string }
   /** Present when the customer swipe-replies to one of our messages. */
   context?: { id: string }
+  /** Present when customer arrives via Click-to-WhatsApp ad or post. */
+  referral?: {
+    source_url?: string
+    source_type?: string
+    source_id?: string
+    headline?: string
+    body?: string
+  }
 }
 
 /** One entry of a failed status's `errors` array, as Meta sends it. */
@@ -814,6 +823,14 @@ async function processMessage(
   // no active flows take the runner's early-exit "no_match" path
   // basically for free (one indexed SELECT for the active run).
   // ============================================================
+  // Extract Meta Click-to-WhatsApp referral attribution if present
+  if (message.referral) {
+    const refSource = extractReferralSource(message.referral)
+    if (refSource) {
+      await persistLeadSourceIfEmpty(supabaseAdmin(), contactRecord.id, refSource)
+    }
+  }
+
   const flowResult = await dispatchInboundToFlows({
     accountId,
     userId: configOwnerUserId,

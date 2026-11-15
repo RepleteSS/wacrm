@@ -1032,19 +1032,19 @@
             "rows": [
               {
                 "description": "Learn trading & options basics",
-                "next_node_key": "ask_q1_primary_need",
+                "next_node_key": "ask_q2_trading_experience",
                 "reply_id": "wel_fundamentals",
                 "title": "Learn Fundamentals"
               },
               {
                 "description": "Rules-based execution system",
-                "next_node_key": "ask_q1_primary_need",
+                "next_node_key": "ask_q2_trading_experience",
                 "reply_id": "wel_execution",
                 "title": "Structured Execution"
               },
               {
                 "description": "Option strategies & hedging",
-                "next_node_key": "ask_q1_primary_need",
+                "next_node_key": "ask_q2_trading_experience",
                 "reply_id": "wel_mentorship",
                 "title": "Advanced Mentorship"
               },
@@ -1426,7 +1426,7 @@
       "trigger_type": "first_inbound_message"
     }
   ],
-  "exported_at": "2026-11-15T16:37:16.674Z",
+  "exported_at": "2026-11-15T17:19:09.776Z",
   "pipelines": [
     {
       "id": "a94f52ee-6046-4d10-92a0-fe55358cd69a",

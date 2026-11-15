@@ -24,11 +24,11 @@ export type RecommendedProduct =
   | 'human_review';
 
 export interface ScoreBreakdown {
-  needAlignment: number;      // max 30
+  needAlignment: number;      // max 25
   tradingExperience: number;  // max 20
   challengeClarity: number;   // max 15
-  readiness: number;          // max 20
-  engagement: number;         // max 15
+  readiness: number;          // max 30
+  engagement: number;         // max 10
 }
 
 export type ScoreBand = 'HIGH_INTENT' | 'QUALIFIED' | 'RESEARCHING';
@@ -82,40 +82,49 @@ export const REPETE_CUSTOM_FIELDS = {
   CONSENT_STATUS: '4afcbe44-3e22-4958-a20f-faf698c94661',
   CONSENT_TIMESTAMP: 'e49540da-dd5a-44e6-b55b-1eac4e31f464',
   CONVERSATION_NOTES: '172eda3d-2233-438f-91a3-4ce845bc321d',
+  LEAD_SOURCE: 'e955dd8c-3ae0-4ea6-8a2c-91349a2c8d00',
 } as const;
+
+/**
+ * Mapping of welcome menu program selections to corresponding Q1 primary_need answer IDs.
+ */
+export const WELCOME_TO_PRIMARY_NEED_MAP: Record<string, string> = {
+  wel_fundamentals: 'pneed_basics',
+  wel_execution: 'pneed_execution',
+  wel_mentorship: 'pneed_advanced',
+};
 
 /**
  * 100-Point Deterministic Lead Scoring Model
  *
- * 1. Need & Product Alignment: 30 pts
- * 2. Relevant Trading Experience: 20 pts
- * 3. Clarity of Primary Challenge: 15 pts
- * 4. Purchase Readiness: 20 pts
- * 5. Engagement: 15 pts
+ * 1. Need & Product Fit: 25 pts max
+ * 2. Relevant Trading Experience: 20 pts max
+ * 3. Challenge Clarity & Urgency: 15 pts max
+ * 4. Purchase Readiness: 30 pts max
+ * 5. Engagement Quality: 10 pts max
+ * Total: 100 pts max [0, 100]
  */
 export function calculateLeadScore(
   answers: QualificationAnswers,
   repromptCount: number = 0,
 ): { score: number; breakdown: ScoreBreakdown; band: ScoreBand } {
-  // 1. Need and Product Alignment (30 pts max)
+  // 1. Need & Product Fit (25 pts max)
   let needAlignment = 0;
   if (answers.primary_need) {
     if (['pneed_basics', 'pneed_execution', 'pneed_advanced'].includes(answers.primary_need)) {
-      needAlignment = 30;
+      needAlignment = 25;
     } else if (answers.primary_need === 'pneed_process') {
-      needAlignment = 20;
+      needAlignment = 15;
     } else if (answers.primary_need === 'pneed_explore') {
-      needAlignment = 10;
+      needAlignment = 5;
     }
   }
 
-  // 2. Relevant Trading Experience (20 pts max)
+  // 2. Relevant Trading Experience (20 pts max — Anomaly corrected: exp_gt_5yr = 20 pts)
   let tradingExperience = 0;
   if (answers.trading_experience) {
-    if (['exp_1_3yr', 'exp_3_5yr'].includes(answers.trading_experience)) {
+    if (['exp_gt_5yr', 'exp_3_5yr', 'exp_1_3yr'].includes(answers.trading_experience)) {
       tradingExperience = 20;
-    } else if (answers.trading_experience === 'exp_gt_5yr') {
-      tradingExperience = 15;
     } else if (answers.trading_experience === 'exp_lt_1yr') {
       tradingExperience = 10;
     } else if (answers.trading_experience === 'exp_beginner') {
@@ -123,7 +132,7 @@ export function calculateLeadScore(
     }
   }
 
-  // 3. Clarity of Challenge (15 pts max)
+  // 3. Challenge Clarity & Problem Urgency (15 pts max)
   let challengeClarity = 0;
   if (answers.primary_challenge) {
     if (['chal_hedges', 'chal_discipline', 'chal_consistency', 'chal_time'].includes(answers.primary_challenge)) {
@@ -135,42 +144,32 @@ export function calculateLeadScore(
     }
   }
 
-  // 4. Purchase Readiness (20 pts max)
+  // 4. Purchase Readiness / Commercial Intent (30 pts max)
   let readiness = 0;
   if (answers.purchase_readiness) {
     if (answers.purchase_readiness.startsWith('ready_now')) {
-      readiness = 20;
+      readiness = 30;
     } else if (answers.purchase_readiness.startsWith('ready_7d')) {
-      readiness = 15;
+      readiness = 20;
     } else if (answers.purchase_readiness.startsWith('ready_30d')) {
       readiness = 10;
     } else if (answers.purchase_readiness.startsWith('ready_research')) {
-      readiness = 5;
+      readiness = 0;
     }
   }
 
-  // 5. Engagement (15 pts max)
+  // 5. Engagement Quality (10 pts max)
   let engagement = 0;
-  const answeredCount = [
-    answers.primary_need,
-    answers.trading_experience,
-    answers.options_knowledge,
-    answers.trading_capital_band,
-    answers.primary_challenge,
-    answers.time_availability,
-    answers.support_preference,
-    answers.purchase_readiness,
-  ].filter(Boolean).length;
-
-  if (answeredCount >= 8) {
-    engagement = repromptCount === 0 ? 15 : repromptCount === 1 ? 10 : 5;
-  } else if (answeredCount >= 4) {
-    engagement = repromptCount === 0 ? 10 : 5;
-  } else {
+  if (repromptCount === 0) {
+    engagement = 10;
+  } else if (repromptCount === 1) {
     engagement = 5;
+  } else {
+    engagement = 2;
   }
 
-  const score = needAlignment + tradingExperience + challengeClarity + readiness + engagement;
+  const rawScore = needAlignment + tradingExperience + challengeClarity + readiness + engagement;
+  const score = Math.max(0, Math.min(100, rawScore));
 
   let band: ScoreBand = 'RESEARCHING';
   if (score >= 80) {
@@ -198,8 +197,8 @@ export function calculateLeadScore(
  * Rules:
  * 1. Foundations: Beginners / <1 yr / lacking fundamentals. Capital is not a barrier.
  *    Initial preference cannot override lack of foundational knowledge.
- * 2. Execution System: Requires experience (>= 1-3 yrs or independent knowledge),
- *    MUST have capital >= 1L (due to margin requirements). If capital < 1L, route to Human Review.
+ * 2. Execution System: Requires experience (>= 1-3 yrs or independent knowledge).
+ *    Suitable experienced traders with lower capital receive tailored credit-spread sizing rationale.
  * 3. Mentorship: Advanced traders with >= 1-3 yrs experience, solid Greeks/adjustments interest,
  *    and available screen time. NEVER recommend to beginners regardless of capital or intent.
  * 4. Human Review: Contradictory answers, exploratory/unsure answers, or capital mismatch.
@@ -783,19 +782,101 @@ export async function isContactOptedOut(db: any, contactId: string): Promise<boo
   }
 }
 
+export interface HumanHandoffParams {
+  contactId: string;
+  accountId: string;
+  conversationId?: string | null;
+  reason?: string;
+  vars?: QualificationAnswers;
+  contactName?: string | null;
+  contactPhone?: string | null;
+}
+
 /**
- * Handle human handoff request in CRM.
+ * Supported acquisition source identifiers.
+ */
+export const VALID_ATTRIBUTION_SOURCES: Record<string, string> = {
+  x: 'X',
+  twitter: 'X',
+  linkedin: 'LinkedIn',
+  telegram: 'Telegram',
+  website: 'Website',
+  web: 'Website',
+  referral: 'Referral',
+  ref: 'Referral',
+};
+
+/**
+ * Parses and strips [src:source] attribution tag from inbound WhatsApp message text.
+ * Returns clean text and validated/normalized source identifier.
+ */
+export function parseAttributionSource(text: string): { cleanText: string; source: string | null } {
+  if (!text) return { cleanText: '', source: null };
+  const match = text.match(/\[src:([a-zA-Z0-9_-]+)\]/i);
+  if (!match) return { cleanText: text, source: null };
+
+  const rawSource = match[1].toLowerCase();
+  const cleanText = text.replace(/\[src:[a-zA-Z0-9_-]+\]/gi, '').trim();
+  const normalized = VALID_ATTRIBUTION_SOURCES[rawSource] || null;
+
+  return { cleanText, source: normalized };
+}
+
+/**
+ * Extracts Click-to-WhatsApp referral attribution from Meta payload referral object.
+ */
+export function extractReferralSource(referral: any): string | null {
+  if (!referral) return null;
+  if (referral.source_type === 'ad' || referral.source_id) {
+    return 'Meta Ads';
+  }
+  if (referral.source_url) {
+    return 'Website';
+  }
+  return 'Meta Referral';
+}
+
+/**
+ * Persists lead source to CRM custom field e955dd8c-3ae0-4ea6-8a2c-91349a2c8d00
+ * ONLY if the contact doesn't already have an acquisition source (preserves original attribution).
+ */
+export async function persistLeadSourceIfEmpty(
+  db: any,
+  contactId: string,
+  source: string,
+): Promise<void> {
+  if (!contactId || !source) return;
+  try {
+    const { data: existing } = await db
+      .from('contact_custom_values')
+      .select('value')
+      .eq('contact_id', contactId)
+      .eq('custom_field_id', REPETE_CUSTOM_FIELDS.LEAD_SOURCE)
+      .maybeSingle();
+
+    if (!existing || !existing.value) {
+      await db.from('contact_custom_values').upsert(
+        {
+          contact_id: contactId,
+          custom_field_id: REPETE_CUSTOM_FIELDS.LEAD_SOURCE,
+          value: source,
+        },
+        { onConflict: 'contact_id,custom_field_id' },
+      );
+    }
+  } catch (err) {
+    console.warn('[qualification-engine] persistLeadSourceIfEmpty error:', err);
+  }
+}
+
+/**
+ * Handle human handoff request in CRM with structured Lead Dossier persistence.
  */
 export async function handleHumanHandoffInCrm(
   db: any,
-  params: {
-    contactId: string;
-    accountId: string;
-    conversationId?: string | null;
-    reason?: string;
-  },
+  params: HumanHandoffParams,
 ): Promise<void> {
-  const { contactId, accountId, conversationId, reason } = params;
+  const { contactId, accountId, conversationId, reason, vars, contactName, contactPhone } = params;
   if (!contactId) return;
 
   try {
@@ -819,15 +900,63 @@ export async function handleHumanHandoffInCrm(
         { onConflict: 'contact_id,custom_field_id' },
       );
 
-    // 3. Set conversation notes
-    if (reason) {
+    // 3. Format and persist structured Lead Dossier in CONVERSATION_NOTES
+    const handoffReasonText = reason || 'User requested human assistance';
+
+    // Fetch existing conversation notes to preserve history
+    const { data: existingNotesRow } = await db
+      .from('contact_custom_values')
+      .select('value')
+      .eq('contact_id', contactId)
+      .eq('custom_field_id', REPETE_CUSTOM_FIELDS.CONVERSATION_NOTES)
+      .maybeSingle();
+
+    const existingNote = existingNotesRow?.value || '';
+
+    // Check if this handoff reason has already been recorded to avoid duplicate entries during retries
+    const isAlreadyLogged = existingNote.includes(`Human Handoff Request: ${handoffReasonText}`);
+
+    if (!isAlreadyLogged) {
+      const contactRef =
+        contactName || contactPhone
+          ? `${contactName || ''} (${contactPhone || ''})`.trim()
+          : contactId;
+
+      const dossierLines = [
+        `Human Handoff Request: ${handoffReasonText}`,
+        `--- LEAD QUALIFICATION DOSSIER ---`,
+        `• Contact Reference: ${contactRef}`,
+      ];
+
+      if (vars) {
+        if (vars.primary_need) dossierLines.push(`• Primary Need: ${formatAnswerValue(vars.primary_need)}`);
+        if (vars.trading_experience) dossierLines.push(`• Trading Experience: ${formatAnswerValue(vars.trading_experience)}`);
+        if (vars.options_knowledge) dossierLines.push(`• Options Knowledge: ${formatAnswerValue(vars.options_knowledge)}`);
+        if (vars.trading_capital_band) dossierLines.push(`• Available Capital: ${formatAnswerValue(vars.trading_capital_band)}`);
+        if (vars.time_availability) dossierLines.push(`• Screen Time: ${formatAnswerValue(vars.time_availability)}`);
+        if (vars.primary_challenge) dossierLines.push(`• Main Challenge: ${formatAnswerValue(vars.primary_challenge)}`);
+        if (vars.purchase_readiness) dossierLines.push(`• Purchase Readiness: ${formatAnswerValue(vars.purchase_readiness)}`);
+
+        const hasCoreAnswers = Boolean(vars.primary_need && vars.trading_experience && vars.options_knowledge);
+        if (hasCoreAnswers) {
+          const evalResult = evaluateProductSuitability(vars);
+          dossierLines.push(`• Product Suitability: ${evalResult.product}`);
+          dossierLines.push(`• Lead Score: ${evalResult.score}/100 (${evalResult.scoreBand})`);
+          dossierLines.push(`• Researching Status: ${vars.purchase_readiness?.startsWith('ready_research') ? 'Yes (Researching)' : 'Active Intent'}`);
+        }
+      }
+      dossierLines.push(`-----------------------------------`);
+
+      const newDossierBlock = dossierLines.join('\n');
+      const finalNote = existingNote ? `${existingNote}\n\n${newDossierBlock}` : newDossierBlock;
+
       await db
         .from('contact_custom_values')
         .upsert(
           {
             contact_id: contactId,
             custom_field_id: REPETE_CUSTOM_FIELDS.CONVERSATION_NOTES,
-            value: `Human Handoff Request: ${reason}`,
+            value: finalNote,
           },
           { onConflict: 'contact_id,custom_field_id' },
         );

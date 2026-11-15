@@ -134,7 +134,7 @@ vi.mock("./admin-client", () => {
         }
         if (updatePayload) {
           for (const m of matched) {
-            Object.assign(m, updatePayload);
+            Object.assign(m as any, updatePayload);
           }
         }
         return resolve({ data: matched, error: null, count: matched.length });
@@ -416,7 +416,7 @@ describe("Replete Equities — Lead Qualification V1 Hardening & Audit Suite", (
     };
 
     const result = evaluateProductSuitability(answers);
-    expect(result.score).toBe(45);
+    expect(result.score).toBe(30); // 5 (explore) + 10 (exp < 1yr) + 5 (unsure chal) + 0 (researching) + 10 (0 reprompts) = 30 (< 50)
     expect(result.scoreBand).toBe("RESEARCHING");
     expect(result.recommendedTags).toContain(REPETE_TAGS.NEEDS_HUMAN_REVIEW);
     expect(result.pipelineStageName).toBe("Human Follow-up Required");
