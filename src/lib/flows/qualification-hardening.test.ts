@@ -34,6 +34,7 @@ vi.mock("./admin-client", () => {
   function builder(table: string) {
     let eqFilter: Record<string, unknown> = {};
     let customMetaMsgId: string | null = null;
+    let updatePayload: Record<string, unknown> | null = null;
 
     const b: Record<string, unknown> = {
       select: () => b,
@@ -53,6 +54,7 @@ vi.mock("./admin-client", () => {
       limit: () => b,
       update: (row: Record<string, unknown>) => {
         h.state.updates.push({ table, row });
+        updatePayload = row;
         return b;
       },
       insert: (row: Record<string, unknown>) => {
@@ -92,8 +94,13 @@ vi.mock("./admin-client", () => {
         let matched = rows(table);
         if (Object.keys(eqFilter).length > 0) {
           matched = matched.filter((r: any) =>
-            Object.entries(eqFilter).every(([k, v]) => r[k] === v),
+            Object.entries(eqFilter).every(([k, v]) =>
+              k === "transition_seq" ? (r[k] ?? 0) === v : r[k] === v,
+            ),
           );
+        }
+        if (updatePayload && matched[0]) {
+          Object.assign(matched[0], updatePayload);
         }
         return { data: matched[0] ?? null, error: null };
       },
@@ -101,8 +108,13 @@ vi.mock("./admin-client", () => {
         let matched = rows(table);
         if (Object.keys(eqFilter).length > 0) {
           matched = matched.filter((r: any) =>
-            Object.entries(eqFilter).every(([k, v]) => r[k] === v),
+            Object.entries(eqFilter).every(([k, v]) =>
+              k === "transition_seq" ? (r[k] ?? 0) === v : r[k] === v,
+            ),
           );
+        }
+        if (updatePayload && matched[0]) {
+          Object.assign(matched[0], updatePayload);
         }
         return { data: matched[0] ?? null, error: null };
       },
@@ -110,13 +122,20 @@ vi.mock("./admin-client", () => {
         let matched = rows(table);
         if (Object.keys(eqFilter).length > 0) {
           matched = matched.filter((r: any) =>
-            Object.entries(eqFilter).every(([k, v]) => r[k] === v),
+            Object.entries(eqFilter).every(([k, v]) =>
+              k === "transition_seq" ? (r[k] ?? 0) === v : r[k] === v,
+            ),
           );
         }
         if (customMetaMsgId) {
           matched = matched.filter(
             (r: any) => r.payload?.meta_message_id === customMetaMsgId,
           );
+        }
+        if (updatePayload) {
+          for (const m of matched) {
+            Object.assign(m, updatePayload);
+          }
         }
         return resolve({ data: matched, error: null, count: matched.length });
       },
@@ -160,7 +179,22 @@ import { dispatchInboundToFlows } from "./engine";
 describe("Replete Equities — Lead Qualification V1 Hardening & Audit Suite", () => {
   beforeEach(() => {
     h.state.activeRuns = [];
-    h.state.flows = [];
+    h.state.flows = [
+      {
+        id: "flow-replete",
+        name: "Replete Equities Flow",
+        account_id: "acct-replete",
+        user_id: "user-replete",
+        status: "active",
+        trigger_type: "keyword",
+        trigger_config: {
+          case_sensitive: false,
+          keywords: ["start", "products"],
+          match_type: "contains",
+        },
+        entry_node_id: "node-start",
+      },
+    ];
     h.state.nodes = [];
     h.state.events = [];
     h.state.updates = [];

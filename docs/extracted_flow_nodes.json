@@ -1,0 +1,794 @@
+[
+  {
+    "key": "ask_q1_primary_need",
+    "type": "send_list",
+    "id": "beaec3e9-cc1c-4cae-8de6-15c172a4c98c",
+    "text": "Question 1/8: Primary Requirement\n\nWhat are you primarily looking for right now?",
+    "next": null,
+    "options": [
+      {
+        "id": "pneed_basics",
+        "title": "Options Basics",
+        "desc": "Learn options trading from basics",
+        "next": "ask_q2_trading_experience"
+      },
+      {
+        "id": "pneed_process",
+        "title": "Improve Process",
+        "desc": "Improve existing trading process",
+        "next": "ask_q2_trading_experience"
+      },
+      {
+        "id": "pneed_execution",
+        "title": "Execution Framework",
+        "desc": "Follow structured execution framework",
+        "next": "ask_q2_trading_experience"
+      },
+      {
+        "id": "pneed_advanced",
+        "title": "Advanced & Hedging",
+        "desc": "Learn advanced strategies & hedging",
+        "next": "ask_q2_trading_experience"
+      },
+      {
+        "id": "pneed_explore",
+        "title": "Explore Programs",
+        "desc": "Explore available programs first",
+        "next": "ask_q2_trading_experience"
+      }
+    ]
+  },
+  {
+    "key": "ask_q2_trading_experience",
+    "type": "send_list",
+    "id": "aaf6aaaa-cae6-4375-80a0-ffc31713b347",
+    "text": "Question 2/8: Trading Experience\n\nHow long have you been trading the stock market or derivatives?",
+    "next": null,
+    "options": [
+      {
+        "id": "exp_beginner",
+        "title": "Beginner",
+        "desc": "Not started yet",
+        "next": "ask_q3_options_knowledge"
+      },
+      {
+        "id": "exp_lt_1yr",
+        "title": "Less than 1 year",
+        "desc": "Started trading recently",
+        "next": "ask_q3_options_knowledge"
+      },
+      {
+        "id": "exp_1_3yr",
+        "title": "1–3 years",
+        "desc": "Moderate market exposure",
+        "next": "ask_q3_options_knowledge"
+      },
+      {
+        "id": "exp_3_5yr",
+        "title": "3–5 years",
+        "desc": "Active market participant",
+        "next": "ask_q3_options_knowledge"
+      },
+      {
+        "id": "exp_gt_5yr",
+        "title": "More than 5 years",
+        "desc": "Veteran / seasoned trader",
+        "next": "ask_q3_options_knowledge"
+      }
+    ]
+  },
+  {
+    "key": "ask_q3_options_knowledge",
+    "type": "send_list",
+    "id": "076e68f6-0e9e-4b32-a1e8-6f1034578c76",
+    "text": "Question 3/8: Options Knowledge\n\nHow comfortable are you with options, strike selection, Greeks, and risk management?",
+    "next": null,
+    "options": [
+      {
+        "id": "know_beginner",
+        "title": "Complete beginner",
+        "desc": "New to options concepts & Greeks",
+        "next": "ask_q4_trading_capital_band"
+      },
+      {
+        "id": "know_basics",
+        "title": "Understand basics",
+        "desc": "Know calls/puts & simple terms",
+        "next": "ask_q4_trading_capital_band"
+      },
+      {
+        "id": "know_independent",
+        "title": "Traded independently",
+        "desc": "Have executed option trades on my own",
+        "next": "ask_q4_trading_capital_band"
+      },
+      {
+        "id": "know_experienced",
+        "title": "Experienced in Hedging",
+        "desc": "Familiar with Greeks & adjustments",
+        "next": "ask_q4_trading_capital_band"
+      }
+    ]
+  },
+  {
+    "key": "ask_q4_trading_capital_band",
+    "type": "send_list",
+    "id": "ad12a613-4378-4a2f-8741-ce8d9e6db4b2",
+    "text": "Question 4/8: Available Capital\n\nWhat approximate capital have you allocated, or are you planning to allocate, specifically for trading?\n\n*(Note: This refers strictly to dedicated trading capital, not income or net worth. Capital alone does not determine product suitability.)*",
+    "next": null,
+    "options": [
+      {
+        "id": "cap_below_50k",
+        "title": "Below ₹50,000",
+        "desc": "Starting small",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_50k_1l",
+        "title": "₹50,000–₹1 lakh",
+        "desc": "Foundational allocation",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_1_3l",
+        "title": "₹1–3 lakh",
+        "desc": "Moderate trading capital",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_3_5l",
+        "title": "₹3–5 lakh",
+        "desc": "Mid-tier basket deployment",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_5_10l",
+        "title": "₹5–10 lakh",
+        "desc": "Substantial capital base",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_above_10l",
+        "title": "Above ₹10 lakh",
+        "desc": "High capital allocation",
+        "next": "ask_q5_primary_challenge"
+      },
+      {
+        "id": "cap_undisclosed",
+        "title": "Prefer not to say",
+        "desc": "Keep confidential",
+        "next": "ask_q5_primary_challenge"
+      }
+    ]
+  },
+  {
+    "key": "ask_q5_primary_challenge",
+    "type": "send_list",
+    "id": "a926a911-f378-44b2-a90a-916b9beb0b4f",
+    "text": "Question 5/8: Main Challenge\n\nWhat is your biggest challenge at the moment?",
+    "next": null,
+    "options": [
+      {
+        "id": "chal_fundamentals",
+        "title": "Fundamentals",
+        "desc": "Understanding core fundamentals",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_strategies",
+        "title": "Managing Strategies",
+        "desc": "Choosing & managing strategies",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_consistency",
+        "title": "Rules & Consistency",
+        "desc": "Consistency & following trading rules",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_discipline",
+        "title": "Execution Discipline",
+        "desc": "Discipline and risk management",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_hedges",
+        "title": "Complex Hedges",
+        "desc": "Managing complex hedges & spreads",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_time",
+        "title": "Lack of Time",
+        "desc": "Little time to monitor live trades",
+        "next": "ask_q6_time_availability"
+      },
+      {
+        "id": "chal_unsure",
+        "title": "Not Sure Yet",
+        "desc": "Still identifying what is missing",
+        "next": "ask_q6_time_availability"
+      }
+    ]
+  },
+  {
+    "key": "ask_q6_time_availability",
+    "type": "send_list",
+    "id": "04f169ce-7373-4413-98aa-85ac381992fd",
+    "text": "Question 6/8: Time Availability\n\nHow much time can you realistically devote to trading and monitoring positions?",
+    "next": null,
+    "options": [
+      {
+        "id": "time_lt_30m",
+        "title": "< 30 mins a day",
+        "desc": "Very limited active screen time",
+        "next": "ask_q7_support_preference"
+      },
+      {
+        "id": "time_30_60m",
+        "title": "30–60 mins a day",
+        "desc": "Moderate daily monitoring",
+        "next": "ask_q7_support_preference"
+      },
+      {
+        "id": "time_1_2h",
+        "title": "1–2 hours a day",
+        "desc": "Regular active participation",
+        "next": "ask_q7_support_preference"
+      },
+      {
+        "id": "time_gt_2h",
+        "title": "> 2 hours a day",
+        "desc": "High screen time / active trader",
+        "next": "ask_q7_support_preference"
+      },
+      {
+        "id": "time_structured",
+        "title": "Structured Schedule",
+        "desc": "Prefer a structured learning schedule",
+        "next": "ask_q7_support_preference"
+      }
+    ]
+  },
+  {
+    "key": "ask_q7_support_preference",
+    "type": "send_list",
+    "id": "9c56110a-2f39-41da-ad77-77a25ca31f56",
+    "text": "Question 7/8: Learning Preference\n\nWhich kind of support would be most useful to you?",
+    "next": null,
+    "options": [
+      {
+        "id": "supp_basics",
+        "title": "Structured Basics",
+        "desc": "Structured learning from the basics",
+        "next": "branch_foundations_q8"
+      },
+      {
+        "id": "supp_execution",
+        "title": "Execution Framework",
+        "desc": "A defined, rules-based framework",
+        "next": "branch_execution_q8"
+      },
+      {
+        "id": "supp_mentorship",
+        "title": "Advanced Mentorship",
+        "desc": "Personalised strategy guidance",
+        "next": "branch_mentorship_q8"
+      },
+      {
+        "id": "supp_unsure",
+        "title": "Understand Differences",
+        "desc": "I'd like to understand differences first",
+        "next": "branch_unsure_q8"
+      }
+    ]
+  },
+  {
+    "key": "branch_execution_q8",
+    "type": "send_list",
+    "id": "c73c6e48-2a85-4b1f-a8c4-cc1e81b3f761",
+    "text": "Question 8/8: Readiness\n\nWhen would you ideally like to deploy a structured execution system?",
+    "next": null,
+    "options": [
+      {
+        "id": "ready_now_exe",
+        "title": "Ready to explore now",
+        "desc": "High intent to begin immediately",
+        "next": "tag_execution_high_intent"
+      },
+      {
+        "id": "ready_7d_exe",
+        "title": "Within next 7 days",
+        "desc": "Planning to start this week",
+        "next": "tag_execution_qualified"
+      },
+      {
+        "id": "ready_30d_exe",
+        "title": "Within next 30 days",
+        "desc": "Planning for next month",
+        "next": "tag_execution_qualified"
+      },
+      {
+        "id": "ready_research_exe",
+        "title": "Just researching",
+        "desc": "Gathering information for now",
+        "next": "tag_execution_researching"
+      }
+    ]
+  },
+  {
+    "key": "branch_foundations_q8",
+    "type": "send_list",
+    "id": "83477ebd-1e6f-402f-98ce-057f433b6892",
+    "text": "Question 8/8: Readiness\n\nWhen would you ideally like to get started with your options foundation journey?",
+    "next": null,
+    "options": [
+      {
+        "id": "ready_now_fnd",
+        "title": "Ready to explore now",
+        "desc": "High intent to begin immediately",
+        "next": "tag_foundations_high_intent"
+      },
+      {
+        "id": "ready_7d_fnd",
+        "title": "Within next 7 days",
+        "desc": "Planning to start this week",
+        "next": "tag_foundations_qualified"
+      },
+      {
+        "id": "ready_30d_fnd",
+        "title": "Within next 30 days",
+        "desc": "Planning for next month",
+        "next": "tag_foundations_qualified"
+      },
+      {
+        "id": "ready_research_fnd",
+        "title": "Just researching",
+        "desc": "Gathering information for now",
+        "next": "tag_foundations_researching"
+      }
+    ]
+  },
+  {
+    "key": "branch_mentorship_q8",
+    "type": "send_list",
+    "id": "0954a095-8558-44eb-992b-c822c28cb7d9",
+    "text": "Question 8/8: Readiness\n\nWhen would you ideally like to enroll in the Option Strategies Mentorship Program?",
+    "next": null,
+    "options": [
+      {
+        "id": "ready_now_mnt",
+        "title": "Ready to explore now",
+        "desc": "High intent to begin immediately",
+        "next": "tag_mentorship_high_intent"
+      },
+      {
+        "id": "ready_7d_mnt",
+        "title": "Within next 7 days",
+        "desc": "Planning to start this week",
+        "next": "tag_mentorship_qualified"
+      },
+      {
+        "id": "ready_30d_mnt",
+        "title": "Within next 30 days",
+        "desc": "Planning for next month",
+        "next": "tag_mentorship_qualified"
+      },
+      {
+        "id": "ready_research_mnt",
+        "title": "Just researching",
+        "desc": "Gathering information for now",
+        "next": "tag_mentorship_researching"
+      }
+    ]
+  },
+  {
+    "key": "branch_unsure_q8",
+    "type": "send_list",
+    "id": "630dd830-9a0e-42fc-8916-8c2e8b7aee74",
+    "text": "Question 8/8: Readiness\n\nWhen would you like to speak with our advisory team to clarify the differences?",
+    "next": null,
+    "options": [
+      {
+        "id": "ready_now_rev",
+        "title": "Ready to talk now",
+        "desc": "Connect with our team today",
+        "next": "tag_review_high_intent"
+      },
+      {
+        "id": "ready_7d_rev",
+        "title": "Within next 7 days",
+        "desc": "Schedule a discussion this week",
+        "next": "tag_review_qualified"
+      },
+      {
+        "id": "ready_research_rev",
+        "title": "Just researching",
+        "desc": "Take time to review materials",
+        "next": "tag_review_researching"
+      }
+    ]
+  },
+  {
+    "key": "check_opt_out",
+    "type": "condition",
+    "id": "2a2ef151-3efe-4e8d-bfb2-91a1208a8e9f",
+    "text": null,
+    "next": null,
+    "options": []
+  },
+  {
+    "key": "decide_later_message",
+    "type": "send_message",
+    "id": "b87d9d0c-a8c2-4fb0-80c0-e9b3fd694165",
+    "text": "No problem at all! Take your time to review our resources. Whenever you are ready to explore further, just send us a message here on WhatsApp.\n\nWishing you disciplined and successful trading!",
+    "next": "end_qualification_complete",
+    "options": []
+  },
+  {
+    "key": "end_qualification_complete",
+    "type": "end",
+    "id": "ce8a8bc5-0dec-4447-8429-e173e6031eef",
+    "text": null,
+    "next": null,
+    "options": []
+  },
+  {
+    "key": "exe_details_message",
+    "type": "send_message",
+    "id": "fecfa723-5b52-4deb-a902-dbba5e1add59",
+    "text": "⚡ **Execution System — Intraday Option Selling Basket**\n\nPricing:\n• 3 Months: ₹9,999\n• 6 Months: ₹19,999\n• 12 Months: ₹29,999\n\nKey Highlights:\n• Systematic, rules-based intraday option selling architecture\n• Defined risk, entry/exit criteria, and position management\n• Designed for traders with capital discipline and basic Greeks knowledge\n\nOur team is available to review your setup and broker connectivity.",
+    "next": "end_qualification_complete",
+    "options": []
+  },
+  {
+    "key": "execute_handoff_node",
+    "type": "handoff",
+    "id": "a1b30b82-1a1e-4820-9698-c27a2ac50a84",
+    "text": null,
+    "next": null,
+    "options": []
+  },
+  {
+    "key": "explore_other_options",
+    "type": "send_list",
+    "id": "7a2a2b59-d091-41c3-80d3-bc6bbc9a8945",
+    "text": "Here is an overview of all our solutions. Select any to learn more or speak with an advisor:",
+    "next": null,
+    "options": [
+      {
+        "id": "explore_fnd",
+        "title": "Foundations",
+        "desc": "₹14,999 | Learn option basics",
+        "next": "recommendation_foundations"
+      },
+      {
+        "id": "explore_exe",
+        "title": "Execution System",
+        "desc": "From ₹9,999 | Rules-based basket",
+        "next": "recommendation_execution"
+      },
+      {
+        "id": "explore_mnt",
+        "title": "Mentorship Program",
+        "desc": "₹79,999 | Advanced strategies",
+        "next": "recommendation_mentorship"
+      },
+      {
+        "id": "explore_talk",
+        "title": "Speak with Advisor",
+        "desc": "Personal consultation",
+        "next": "route_human_handoff"
+      }
+    ]
+  },
+  {
+    "key": "flow_suppressed_opt_out",
+    "type": "end",
+    "id": "9f8d7a25-6f96-45e3-9f43-5d8dcf31b94f",
+    "text": null,
+    "next": null,
+    "options": []
+  },
+  {
+    "key": "fnd_details_message",
+    "type": "send_message",
+    "id": "dc094cfb-3fc6-4a05-bc49-57d63c011aa1",
+    "text": "📘 **Replete Equities — Foundations (₹14,999)**\n\nKey Highlights:\n• Complete options trading basics from scratch\n• Option Greeks, moneyness, and strike selection\n• Practical risk management and capital preservation\n• Live practical sessions and structured learning roadmap\n\nOur team is available to assist if you have any questions before enrolling.",
+    "next": "end_qualification_complete",
+    "options": []
+  },
+  {
+    "key": "mnt_details_message",
+    "type": "send_message",
+    "id": "892051c4-9a97-4576-bac2-e9cdf1dd4e8f",
+    "text": "🎓 **Option Strategies Mentorship Program (₹79,999)**\n\nKey Highlights:\n• Advanced option strategy design & portfolio Greeks\n• Live market adjustments, hedging, and volatility management\n• Direct mentorship & personalised review of your trading journal\n• Comprehensive strategy playbook for diverse market regimes\n\nOur team can schedule an evaluation call to ensure this program aligns with your goals.",
+    "next": "end_qualification_complete",
+    "options": []
+  },
+  {
+    "key": "recommendation_execution",
+    "type": "send_buttons",
+    "id": "bcb4697c-0888-489a-a576-deff9c738ed4",
+    "text": "Thanks for sharing your background!\n\n**Our suggested next step: Execution System — Intraday Option Selling Basket**\n\nWhy this may fit:\nYou understand options fundamentals and want a disciplined, rules-based intraday framework to eliminate emotional errors and manage risk systematically.\n\nPricing Options:\n• 3 Months: ₹9,999\n• 6 Months: ₹19,999\n• 12 Months: ₹29,999\n\n*Note: Execution tools provide systematic discipline but do not eliminate market risk or guarantee trading profits. Please review risk disclosures prior to deployment.*\n\nWould you like to:",
+    "next": null,
+    "options": [
+      {
+        "id": "exe_details",
+        "text": "System Details",
+        "next": "exe_details_message"
+      },
+      {
+        "id": "exe_speak_team",
+        "text": "Speak to Team",
+        "next": "route_human_handoff"
+      },
+      {
+        "id": "exe_explore_more",
+        "text": "Explore More",
+        "next": "explore_other_options"
+      }
+    ]
+  },
+  {
+    "key": "recommendation_foundations",
+    "type": "send_buttons",
+    "id": "4ea67e34-7617-49cb-919c-ac196c1a983f",
+    "text": "Thanks for sharing your background!\n\n**Our suggested next step: Foundations**\n\nWhy this may fit:\nYou are looking to build a structured, solid grounding in options trading, strike selection, Greeks, and essential risk management before scaling up.\n\nInvestment: ₹14,999\n\n*Note: This recommendation is based on your stated learning needs. It is not a promise of trading profits or a guarantee of suitability for every financial situation.*\n\nWould you like to:",
+    "next": null,
+    "options": [
+      {
+        "id": "fnd_details",
+        "text": "Program Details",
+        "next": "fnd_details_message"
+      },
+      {
+        "id": "fnd_speak_team",
+        "text": "Speak to Team",
+        "next": "route_human_handoff"
+      },
+      {
+        "id": "fnd_explore_more",
+        "text": "Explore More",
+        "next": "explore_other_options"
+      }
+    ]
+  },
+  {
+    "key": "recommendation_mentorship",
+    "type": "send_buttons",
+    "id": "82b26dd7-8e4f-42ee-9307-e3d42919584e",
+    "text": "Thanks for sharing your background!\n\n**Our suggested next step: Option Strategies Mentorship Program**\n\nWhy this may fit:\nYou have active market experience and seek in-depth mastery in advanced non-directional strategies, dynamic adjustments, portfolio hedging, and risk architecture.\n\nInvestment: ₹79,999\n\n*Note: This program focuses on advanced decision-making and risk modelling. It requires dedication and screen time commitment. Past performance does not guarantee future results.*\n\nWould you like to:",
+    "next": null,
+    "options": [
+      {
+        "id": "mnt_details",
+        "text": "Mentorship Scope",
+        "next": "mnt_details_message"
+      },
+      {
+        "id": "mnt_speak_team",
+        "text": "Speak to Team",
+        "next": "route_human_handoff"
+      },
+      {
+        "id": "mnt_explore_more",
+        "text": "Explore More",
+        "next": "explore_other_options"
+      }
+    ]
+  },
+  {
+    "key": "recommendation_unsure_review",
+    "type": "send_buttons",
+    "id": "50b0c906-de9c-46ac-843c-80beef6f1713",
+    "text": "Thanks for taking the time to share your preferences!\n\nBecause your goals involve exploring the best fit across education and execution frameworks, we want to ensure you get personalized clarity rather than a generalized recommendation.\n\nWe would be happy to have our Replete Equities advisory desk connect with you for a brief walkthrough.",
+    "next": null,
+    "options": [
+      {
+        "id": "unsure_talk_team",
+        "text": "Connect with Team",
+        "next": "route_human_handoff"
+      },
+      {
+        "id": "unsure_decide_later",
+        "text": "Decide Later",
+        "next": "decide_later_message"
+      }
+    ]
+  },
+  {
+    "key": "route_human_handoff",
+    "type": "send_message",
+    "id": "058d922c-eaee-49fb-8e7c-e84b8f14f0f4",
+    "text": "Thank you! I have notified our team at Replete Equities. An advisor will review your preferences and get in touch with you shortly on this WhatsApp chat.\n\nOur team is available Monday to Friday during market and business hours.",
+    "next": "tag_handoff_review",
+    "options": []
+  },
+  {
+    "key": "start",
+    "type": "start",
+    "id": "828d5353-8256-4a64-84e1-0ac9188e7bbd",
+    "text": null,
+    "next": "check_opt_out",
+    "options": []
+  },
+  {
+    "key": "tag_execution_high_intent",
+    "type": "set_tag",
+    "id": "2525a521-2f42-4f2b-a99d-d06f7d269184",
+    "text": null,
+    "next": "tag_execution_product",
+    "options": []
+  },
+  {
+    "key": "tag_execution_product",
+    "type": "set_tag",
+    "id": "d39f9e83-92f4-45ff-a8d8-72c898ed2feb",
+    "text": null,
+    "next": "recommendation_execution",
+    "options": []
+  },
+  {
+    "key": "tag_execution_qualified",
+    "type": "set_tag",
+    "id": "17c5945b-bbbf-4276-9c43-1200b40a8493",
+    "text": null,
+    "next": "tag_execution_product",
+    "options": []
+  },
+  {
+    "key": "tag_execution_researching",
+    "type": "set_tag",
+    "id": "4ac5b418-65c6-4cd7-bdb0-9584e538134a",
+    "text": null,
+    "next": "tag_execution_product",
+    "options": []
+  },
+  {
+    "key": "tag_foundations_high_intent",
+    "type": "set_tag",
+    "id": "eb3ccdcd-0653-460f-924d-aad4fa2d5a87",
+    "text": null,
+    "next": "tag_foundations_product",
+    "options": []
+  },
+  {
+    "key": "tag_foundations_product",
+    "type": "set_tag",
+    "id": "d69575b9-053d-4404-9735-267a87670df8",
+    "text": null,
+    "next": "recommendation_foundations",
+    "options": []
+  },
+  {
+    "key": "tag_foundations_qualified",
+    "type": "set_tag",
+    "id": "08f4d52e-986c-4a34-a38a-caeecbe4bd27",
+    "text": null,
+    "next": "tag_foundations_product",
+    "options": []
+  },
+  {
+    "key": "tag_foundations_researching",
+    "type": "set_tag",
+    "id": "036f0004-eff9-4e2e-92ab-35d268acf635",
+    "text": null,
+    "next": "tag_foundations_product",
+    "options": []
+  },
+  {
+    "key": "tag_handoff_review",
+    "type": "set_tag",
+    "id": "affc47dc-3556-4876-874a-0bb112b64f71",
+    "text": null,
+    "next": "execute_handoff_node",
+    "options": []
+  },
+  {
+    "key": "tag_human_review_required",
+    "type": "set_tag",
+    "id": "05b24160-9a30-471c-9336-9b3a4ac3dbc1",
+    "text": null,
+    "next": "recommendation_unsure_review",
+    "options": []
+  },
+  {
+    "key": "tag_mentorship_high_intent",
+    "type": "set_tag",
+    "id": "ba7d3dc7-8ac3-4f8b-afd4-99ed889289e8",
+    "text": null,
+    "next": "tag_mentorship_product",
+    "options": []
+  },
+  {
+    "key": "tag_mentorship_product",
+    "type": "set_tag",
+    "id": "ac4bed6f-ef4b-43a6-a8a4-b7b86c7ecc33",
+    "text": null,
+    "next": "recommendation_mentorship",
+    "options": []
+  },
+  {
+    "key": "tag_mentorship_qualified",
+    "type": "set_tag",
+    "id": "d196d725-492a-441b-adaf-b8748393b5bb",
+    "text": null,
+    "next": "tag_mentorship_product",
+    "options": []
+  },
+  {
+    "key": "tag_mentorship_researching",
+    "type": "set_tag",
+    "id": "f1a634cb-7ea2-4579-83f7-f78058abca47",
+    "text": null,
+    "next": "tag_mentorship_product",
+    "options": []
+  },
+  {
+    "key": "tag_new_lead",
+    "type": "set_tag",
+    "id": "26f0e65e-56eb-4f7e-8a69-3d6215e8fad8",
+    "text": null,
+    "next": "welcome_prompt",
+    "options": []
+  },
+  {
+    "key": "tag_review_high_intent",
+    "type": "set_tag",
+    "id": "43f919b8-9a41-43b5-9724-5eab3c6c5025",
+    "text": null,
+    "next": "tag_human_review_required",
+    "options": []
+  },
+  {
+    "key": "tag_review_qualified",
+    "type": "set_tag",
+    "id": "ad37d9d0-49ac-460a-af4f-d0b8143da5f2",
+    "text": null,
+    "next": "tag_human_review_required",
+    "options": []
+  },
+  {
+    "key": "tag_review_researching",
+    "type": "set_tag",
+    "id": "7adbdb5f-91df-4a96-a03c-b4c657eaddbc",
+    "text": null,
+    "next": "tag_human_review_required",
+    "options": []
+  },
+  {
+    "key": "welcome_prompt",
+    "type": "send_list",
+    "id": "fa34314c-d744-418a-8d91-06d4302065ad",
+    "text": "Hi {{vars.first_name}}! Welcome to Replete Equities.\n\nI'm here to help you identify which of our trading education and execution solutions best fits your current experience, requirements, and available capital.\n\nI'll ask a few quick questions so we can guide you towards the right option. There is no obligation to purchase.\n\nLet's start!",
+    "next": null,
+    "options": [
+      {
+        "id": "wel_fundamentals",
+        "title": "Learn Fundamentals",
+        "desc": "Learn trading & options basics",
+        "next": "ask_q1_primary_need"
+      },
+      {
+        "id": "wel_execution",
+        "title": "Structured Execution",
+        "desc": "Rules-based execution system",
+        "next": "ask_q1_primary_need"
+      },
+      {
+        "id": "wel_mentorship",
+        "title": "Advanced Mentorship",
+        "desc": "Option strategies & hedging",
+        "next": "ask_q1_primary_need"
+      },
+      {
+        "id": "wel_team",
+        "title": "Speak to the Team",
+        "desc": "Connect with our advisory desk",
+        "next": "route_human_handoff"
+      }
+    ]
+  }
+]
