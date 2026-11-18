@@ -176,6 +176,11 @@ export function matchesKeywordTrigger(
       const needle = cfg.case_sensitive ? trimmedRaw : trimmedRaw.toLowerCase();
       if (haystack === needle) return true;
     } else if (matchType === "word") {
+      // Safe matching: short greeting keywords (<= 3 chars, like "hi", "hey") must not match
+      // inside long multi-sentence messages (> 25 chars) intended for a human agent.
+      if (trimmedRaw.length <= 3 && trimmedText.length > 25) {
+        continue;
+      }
       if (matchesWholeWord(trimmedText, trimmedRaw, cfg.case_sensitive)) {
         return true;
       }
@@ -183,8 +188,9 @@ export function matchesKeywordTrigger(
       // match_type === 'contains'
       // Safe matching: short keywords (<= 3 chars, like "hi", "hey") MUST use word boundary
       // to avoid matching inside "which", "this", "shift", etc.
+      // Additionally, do not match short greetings in long conversational messages (> 25 chars)
       if (trimmedRaw.length <= 3) {
-        if (matchesWholeWord(trimmedText, trimmedRaw, cfg.case_sensitive)) {
+        if (trimmedText.length <= 25 && matchesWholeWord(trimmedText, trimmedRaw, cfg.case_sensitive)) {
           return true;
         }
       } else {
@@ -1089,6 +1095,75 @@ async function closeActiveRun(
   );
 }
 
+/**
+ * Checks whether this conversation is currently being actively handled by a human agent
+ * or if the contact has already completed / been handed off from qualification.
+ *
+ * Suppresses auto-starting or reprompting flows so the bot never interrupts active agent chats.
+ */
+export async function isConversationUnderHumanHandling(
+  db: AdminClient,
+  conversationId: string,
+  contactId: string,
+): Promise<boolean> {
+  if (!conversationId) return false;
+
+  try {
+    // 1. Check if an agent has sent a message in this conversation within the last 7 days
+    const { data: agentMsg } = await db
+      .from("messages")
+      .select("id, created_at")
+      .eq("conversation_id", conversationId)
+      .eq("sender_type", "agent")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (agentMsg?.created_at) {
+      const msgDate = new Date(agentMsg.created_at).getTime();
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      if (msgDate >= sevenDaysAgo) {
+        return true;
+      }
+    }
+
+    // 2. Check if the conversation is assigned to an agent
+    const { data: conv } = await db
+      .from("conversations")
+      .select("assigned_agent_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (conv?.assigned_agent_id) {
+      return true;
+    }
+
+    // 3. Check if contact was previously handed off to human or paused by agent in flow_runs
+    if (contactId) {
+      const { data: recentRuns } = await db
+        .from("flow_runs")
+        .select("id, status")
+        .eq("contact_id", contactId)
+        .order("started_at", { ascending: false })
+        .limit(5);
+
+      if (
+        recentRuns &&
+        recentRuns.some(
+          (r: any) => r.status === "handed_off" || r.status === "paused_by_agent",
+        )
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.warn("[flows] isConversationUnderHumanHandling check failed:", err);
+    return false;
+  }
+}
+
 // ============================================================
 // Public entry point — the webhook calls this on every inbound.
 // ============================================================
@@ -1221,7 +1296,21 @@ export async function dispatchInboundToFlows(
       ownedRunId = null;
     }
 
-    // No active run → look for a flow whose entry trigger matches.
+    // No active run → check if conversation is under active human handling
+    const isHumanActive = await isConversationUnderHumanHandling(
+      db,
+      input.conversationId,
+      input.contactId,
+    );
+    if (isHumanActive) {
+      // Allow explicit restart commands only (e.g. "restart", "start flow", "start qualification")
+      const isExplicitRestart = /^(restart|start qualification|start flow)$/i.test(inboundText.trim());
+      if (!isExplicitRestart) {
+        return { consumed: false, outcome: "no_match" };
+      }
+    }
+
+    // Look for a flow whose entry trigger matches.
     const flow = await findEntryFlow(
       db,
       input.accountId,
@@ -1390,6 +1479,32 @@ async function handleReplyForActiveRun(
       flow_run_id: run.id,
       outcome: outcome.outcome,
     };
+  }
+
+  // If an agent has messaged in this conversation, pause this active run immediately
+  // so the bot yields to the active human conversation instead of spamming reprompts.
+  if (run.conversation_id && message.kind === "text") {
+    const isHumanActive = await isConversationUnderHumanHandling(
+      db,
+      run.conversation_id,
+      run.contact_id!,
+    );
+    if (isHumanActive) {
+      await db
+        .from("flow_runs")
+        .update({
+          status: "paused_by_agent",
+          ended_at: new Date().toISOString(),
+          end_reason: "agent_conversation_active",
+        })
+        .eq("id", run.id);
+
+      await logEvent(db, run.id, "completed", run.current_node_key, {
+        reason: "paused_for_active_agent_conversation",
+      });
+
+      return { consumed: false, flow_run_id: run.id, outcome: "no_match" };
+    }
   }
 
   // No match → fallback. Apply the policy.

@@ -425,4 +425,131 @@ describe('Qualification Engine — Product Suitability & 100-Point Scoring', () 
     expect(deriveVarKeyForNode('branch_execution_q8')).toBe('purchase_readiness');
     expect(deriveVarKeyForNode('other_node')).toBeNull();
   });
+
+  // Human Conversation Guard & Greeting Length Safeguard
+  it('Human Conversation Guard: isConversationUnderHumanHandling detects active agent context', async () => {
+    const { isConversationUnderHumanHandling, matchesKeywordTrigger } = await import('./engine');
+
+    // 1. Keyword check: Short greeting vs long conversational message
+    const triggerCfg = {
+      keywords: ['hi', 'hello', 'hey', 'replete'],
+      match_type: 'word' as const,
+      case_sensitive: false,
+    };
+    expect(matchesKeywordTrigger('hi', triggerCfg)).toBe(true);
+    expect(matchesKeywordTrigger('Hi', triggerCfg)).toBe(true);
+    expect(matchesKeywordTrigger('hi there', triggerCfg)).toBe(true);
+    expect(matchesKeywordTrigger('Hi! I want to join', triggerCfg)).toBe(true);
+    // Long business message starting with "Hi" should NOT trigger flow
+    expect(
+      matchesKeywordTrigger(
+        'Hi Sachin Sir, Update is like for R Money, I am running with Tradetron so I do not want to do any changes with R Money broker',
+        triggerCfg,
+      ),
+    ).toBe(false);
+
+    // 2. Active agent message in conversation
+    const mockDbAgentActive: any = {
+      from: (table: string) => ({
+        select: () => ({
+          eq: (col: string, val: string) => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({
+                    data: table === 'messages' ? { id: 'm-1', created_at: new Date().toISOString() } : null,
+                  }),
+                }),
+              }),
+            }),
+            maybeSingle: async () => ({ data: null }),
+            order: () => ({
+              limit: () => ({
+                data: [],
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+    const isAgentActive = await isConversationUnderHumanHandling(mockDbAgentActive, 'conv-123', 'contact-123');
+    expect(isAgentActive).toBe(true);
+
+    // 3. Assigned conversation
+    const mockDbAssigned: any = {
+      from: (table: string) => ({
+        select: () => ({
+          eq: (col: string, val: string) => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null }),
+                }),
+              }),
+            }),
+            maybeSingle: async () => ({
+              data: table === 'conversations' ? { assigned_agent_id: 'agent-456' } : null,
+            }),
+            order: () => ({
+              limit: () => ({
+                data: [],
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+    const isAssigned = await isConversationUnderHumanHandling(mockDbAssigned, 'conv-123', 'contact-123');
+    expect(isAssigned).toBe(true);
+
+    // 4. Contact with prior handoff or paused run
+    const mockDbPriorHandoff: any = {
+      from: (table: string) => ({
+        select: () => ({
+          eq: (col: string, val: string) => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null }),
+                }),
+              }),
+            }),
+            maybeSingle: async () => ({ data: null }),
+            order: () => ({
+              limit: async () => ({
+                data: table === 'flow_runs' ? [{ id: 'r-1', status: 'paused_by_agent' }] : [],
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+    const isPriorHandoff = await isConversationUnderHumanHandling(mockDbPriorHandoff, 'conv-123', 'contact-123');
+    expect(isPriorHandoff).toBe(true);
+
+    // 5. Clean fresh conversation with no agent activity or handoff
+    const mockDbClean: any = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null }),
+                }),
+              }),
+            }),
+            maybeSingle: async () => ({ data: null }),
+            order: () => ({
+              limit: async () => ({
+                data: [],
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+    const isClean = await isConversationUnderHumanHandling(mockDbClean, 'conv-new', 'contact-new');
+    expect(isClean).toBe(false);
+  });
 });
