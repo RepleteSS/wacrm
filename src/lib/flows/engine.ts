@@ -1481,32 +1481,6 @@ async function handleReplyForActiveRun(
     };
   }
 
-  // If an agent has messaged in this conversation, pause this active run immediately
-  // so the bot yields to the active human conversation instead of spamming reprompts.
-  if (run.conversation_id && message.kind === "text") {
-    const isHumanActive = await isConversationUnderHumanHandling(
-      db,
-      run.conversation_id,
-      run.contact_id!,
-    );
-    if (isHumanActive) {
-      await db
-        .from("flow_runs")
-        .update({
-          status: "paused_by_agent",
-          ended_at: new Date().toISOString(),
-          end_reason: "agent_conversation_active",
-        })
-        .eq("id", run.id);
-
-      await logEvent(db, run.id, "completed", run.current_node_key, {
-        reason: "paused_for_active_agent_conversation",
-      });
-
-      return { consumed: false, flow_run_id: run.id, outcome: "no_match" };
-    }
-  }
-
   // No match → fallback. Apply the policy.
   const policy = resolveFallbackPolicy(flow.fallback_policy);
   const newReprompts = run.reprompt_count + 1;
@@ -1540,6 +1514,32 @@ async function handleReplyForActiveRun(
     reprompt_count: newReprompts,
   });
   if (action.type === "reprompt") {
+    // If an agent has messaged in this conversation or conversation is assigned,
+    // pause this run instead of spamming reprompts over the agent's work.
+    if (run.conversation_id) {
+      const isHumanActive = await isConversationUnderHumanHandling(
+        db,
+        run.conversation_id,
+        run.contact_id!,
+      );
+      if (isHumanActive) {
+        await db
+          .from("flow_runs")
+          .update({
+            status: "paused_by_agent",
+            ended_at: new Date().toISOString(),
+            end_reason: "agent_conversation_active",
+          })
+          .eq("id", run.id);
+
+        await logEvent(db, run.id, "completed", run.current_node_key, {
+          reason: "paused_for_active_agent_conversation",
+        });
+
+        return { consumed: false, flow_run_id: run.id, outcome: "no_match" };
+      }
+    }
+
     // Re-send the same prompt. Same node, no current_node_key change.
     // The interactive helpers interpolate run.vars themselves, so a
     // reprompt renders the same text the original prompt did. A send
