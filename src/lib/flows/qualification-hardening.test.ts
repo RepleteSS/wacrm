@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
     contactTags: [] as { contact_id: string; tag_id: string }[],
     customValues: [] as { contact_id: string; custom_field_id: string; value: string }[],
     deals: [] as Record<string, unknown>[],
+    conversations: [] as Record<string, unknown>[],
   },
   sendButtons: vi.fn(async () => ({ whatsapp_message_id: "wamid.btn.1" })),
   sendList: vi.fn(async () => ({ whatsapp_message_id: "wamid.lst.1" })),
@@ -28,6 +29,7 @@ vi.mock("./admin-client", () => {
     if (table === "contact_custom_values") return h.state.customValues;
     if (table === "deals") return h.state.deals;
     if (table === "flow_run_events") return h.state.events;
+    if (table === "conversations") return h.state.conversations;
     return [];
   }
 
@@ -203,6 +205,7 @@ describe("Replete Equities — Lead Qualification V1 Hardening & Audit Suite", (
     h.state.contactTags = [];
     h.state.customValues = [];
     h.state.deals = [];
+    h.state.conversations = [];
     vi.clearAllMocks();
   });
 
@@ -1186,6 +1189,47 @@ describe("Replete Equities — Lead Qualification V1 Hardening & Audit Suite", (
 
       expect(dupeRes.consumed).toBe(true);
       expect(dupeRes.outcome).toBe("duplicate_inbound_ignored");
+    });
+
+    it("Human Assignment Guard: completely avoids flow if chat is assigned to an agent", async () => {
+      h.state.conversations = [
+        {
+          id: "conv-assigned",
+          assigned_agent_id: "agent-sachin-uuid",
+        },
+      ];
+      h.state.activeRuns = [
+        {
+          id: "run-assigned-1",
+          account_id: "acct-replete",
+          flow_id: "flow-replete",
+          contact_id: "contact-assigned",
+          conversation_id: "conv-assigned",
+          status: "active",
+          current_node_key: "welcome_prompt",
+          vars: {},
+          reprompt_count: 0,
+        },
+      ];
+
+      const res = await dispatchInboundToFlows({
+        accountId: "acct-replete",
+        userId: "user-replete",
+        contactId: "contact-assigned",
+        conversationId: "conv-assigned",
+        message: { kind: "text", text: "hi", meta_message_id: "meta-msg-assigned" },
+        isFirstInboundMessage: false,
+      });
+
+      // Flow must completely stand down
+      expect(res.consumed).toBe(false);
+      expect(res.outcome).toBe("no_match");
+
+      // Verify lingering active run was terminated with paused_by_agent / assigned_to_agent
+      const runUpdate = h.state.updates.find((u) => u.table === "flow_runs");
+      expect(runUpdate).toBeDefined();
+      expect(runUpdate?.row.status).toBe("paused_by_agent");
+      expect(runUpdate?.row.end_reason).toBe("assigned_to_agent");
     });
   });
 });

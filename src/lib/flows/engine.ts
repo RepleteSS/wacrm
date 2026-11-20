@@ -702,7 +702,7 @@ function interpolateOptionalVars(
 async function endRun(
   db: AdminClient,
   runId: string,
-  status: "completed" | "handed_off" | "cancelled" | "failed",
+  status: "completed" | "handed_off" | "cancelled" | "failed" | "paused_by_agent",
   reason: string,
 ): Promise<void> {
   await db
@@ -1224,6 +1224,33 @@ export async function dispatchInboundToFlows(
         flow_run_id: activeRun?.id,
         outcome: "no_match",
       };
+    }
+
+    // 3. Human Assignment Guard: Flow triggers ONLY in unassigned chats.
+    // If a chat is assigned to any agent, avoid the flow completely.
+    if (input.conversationId) {
+      const { data: conv } = await db
+        .from("conversations")
+        .select("assigned_agent_id")
+        .eq("id", input.conversationId)
+        .maybeSingle();
+
+      if (conv?.assigned_agent_id) {
+        // Conversation is assigned to an agent -> avoid flow entirely.
+        // If an active run was lingering, terminate it immediately.
+        const activeRun = await loadActiveRunForContact(
+          db,
+          input.accountId,
+          input.contactId,
+        );
+        if (activeRun) {
+          await logEvent(db, activeRun.id, "completed", activeRun.current_node_key, {
+            reason: "paused_for_assigned_agent",
+          });
+          await endRun(db, activeRun.id, "paused_by_agent", "assigned_to_agent");
+        }
+        return { consumed: false, outcome: "no_match" };
+      }
     }
 
     const activeRun = await loadActiveRunForContact(
